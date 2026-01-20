@@ -5,7 +5,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
     public static class Browser
     {
         public static void Open(string url)
-        {            
+        {
             try
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

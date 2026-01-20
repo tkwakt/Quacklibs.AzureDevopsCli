@@ -8,6 +8,10 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
         public const string WorkItemTitle = "System.Title";
         public const string WorkItemState = "System.State";
         public const string WorkItemAssignedTo = "System.AssignedTo";
+        public const string TeamProject = "System.TeamProject";
+
+        public const string IterationPath = "System.IterationPath";
+
     }
 
 

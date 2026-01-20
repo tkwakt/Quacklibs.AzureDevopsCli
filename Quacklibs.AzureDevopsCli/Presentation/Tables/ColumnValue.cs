@@ -22,8 +22,8 @@ public class ColumnValue<T>
     {
         var columnValue = _columnValueSelector(value) ?? string.Empty;
         bool isMarkup = columnValue.EndsWith("/]");
-        var safeColumnValue =  isMarkup ? columnValue : Markup.Escape(columnValue);
-        
+        var safeColumnValue = isMarkup ? columnValue : Markup.Escape(columnValue);
+
         return safeColumnValue;
     }
 

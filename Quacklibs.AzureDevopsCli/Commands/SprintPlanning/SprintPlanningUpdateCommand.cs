@@ -1,36 +1,30 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using Microsoft.VisualStudio.Services.WebApi.Patch;
-using Quacklibs.AzureDevopsCli.Services;
+﻿using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi.Types;
 using Microsoft.TeamFoundation.Work.WebApi;
-using Microsoft.TeamFoundation.Core.WebApi;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.VisualStudio.Services.WebApi.Patch;
+using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Services;
 
 
 namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
 {
-    [Command(name: "update", Description = "Move all active items from active iteration to the new iteration")]
     internal class SprintPlanningUpdateCommand : BaseCommand
     {
         public AzureDevopsService _service { get; }
 
-        [Option("--team|--project")]
-        [Required]
-        string Project { get; set; }
+        public string Project { get; set; }
 
-        [Option("--for")]
-        string AssignedTo { get; set; } = "@all";
+        public string AssignedTo { get; set; } = "@all";
 
-        public SprintPlanningUpdateCommand(AzureDevopsService service, SettingsService options)
+        public SprintPlanningUpdateCommand(AzureDevopsService service, SettingsService options) : base("update", "Move workitems from one sprint to another")
         {
             _service = service;
- 
-            Project = base.EnvironmentSettings.DefaultProject;
+
+            Project = base.Settings.DefaultProject;
         }
 
-        public override async Task<int> OnExecuteAsync(CommandLineApplication app)
+        protected override async Task<int> OnExecuteAsync(ParseResult parseResult)
         {
             var projects = await _service.GetClient<ProjectHttpClient>().GetProjects();
 
@@ -70,7 +64,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
             var fromIteration = AnsiConsole.Prompt(fromPrompt);
             var toIteration = AnsiConsole.Prompt(toPrompt);
 
-            var assignedToWiql = new AssignedUserWiqlQueryPart(base.EnvironmentSettings.UserEmail).Get(this.AssignedTo);
+            var assignedToWiql = new AssignedUserWiqlQueryPart(base.Settings.UserEmail).Get(this.AssignedTo);
 
             var wiql = new Wiql()
             {
@@ -95,9 +89,9 @@ namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
                 return ExitCodes.Ok;
             }
 
-            string[] fields = [AzureDevopsFields.WorkItemState, AzureDevopsFields.WorkItemType, AzureDevopsFields.WorkItemAssignedTo, AzureDevopsFields.WorkItemTitle];
-            var workItemsToMove = await workItemClient.GetWorkItemsAsync(workitemIdsInCurrentIteration, fields); 
-           
+            string[] fields = new[] { AzureDevopsFields.WorkItemState, AzureDevopsFields.WorkItemType, AzureDevopsFields.WorkItemAssignedTo, AzureDevopsFields.WorkItemTitle };
+            var workItemsToMove = await workItemClient.GetWorkItemsAsync(workitemIdsInCurrentIteration, fields);
+
             var table = TableBuilder<WorkItem>
                 .Create()
                 .WithTitle("Workitems that will be moved")

@@ -1,25 +1,33 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.Services.Common;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Commands;
 
-[HelpOption("--help")]
-public abstract class BaseCommand
+public abstract class BaseCommand : System.CommandLine.Command
 {
     protected readonly SettingsService SettingsService;
     protected readonly Settings Settings;
-    protected EnvironmentConfiguration EnvironmentSettings => Settings.CurrentEnv();
 
-    protected BaseCommand()
+    protected BaseCommand(string commandName, string description, params string[] aliasses) : base(commandName, description)
     {
+        if (aliasses.Any())
+        {
+            base.Aliases.AddRange(aliasses);
+        }
+
         SettingsService = Program.ServiceLocator.GetService<SettingsService>()!;
         Settings = SettingsService!.Settings;
+
+        this.SetAction(async context =>
+        {
+            await OnExecuteAsync(context);
+        });
     }
-    
-    public virtual Task<int> OnExecuteAsync(CommandLineApplication app)
+
+    protected virtual Task<int> OnExecuteAsync(ParseResult parseResult)
     {
-         Console.WriteLine("no parameter provided. append --help to the command see the available options");
+        Console.WriteLine("no parameter provided. append --help to the command see the available options");
         return Task.FromResult(ExitCodes.Ok);
     }
 

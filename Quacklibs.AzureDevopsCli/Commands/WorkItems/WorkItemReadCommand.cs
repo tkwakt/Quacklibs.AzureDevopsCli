@@ -1,36 +1,68 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
+﻿using Quacklibs.AzureDevopsCli.Core.Behavior;
 using Quacklibs.AzureDevopsCli.Services;
-
+using System;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;
 
-[Command("read", "r", Description = "List one or multiple work items from a team or project")]
 internal class WorkItemReadCommand : BaseCommand
 {
-    [Option("-a|--assignedTo|--for")]
-    public string AssignedTo { get; set; } = "@me";
+    private const int MaxAllowableNumbersOfWorkItems = 200;
 
-    [Option("-s|--state")]
-    public WorkItemState[] State { get; set; } = [WorkItemState.Active];
-    
-    private readonly AzureDevopsService _azureDevops;
 
-    public WorkItemReadCommand(AzureDevopsService azureDevops)
+    private Option<string> AssignedToOption = new("--for");
+
+    public Option<WorkItemState[]> StateOption = new("--state")
     {
+        Arity = ArgumentArity.OneOrMore,
+        DefaultValueFactory = (_) => [WorkItemState.New, WorkItemState.Active]
+    };
+
+    private readonly AzureDevopsService _azureDevops;
+    private readonly AzureDevopsUserService _azureDevopsUserService;
+
+    public WorkItemReadCommand(AzureDevopsService azureDevops, AzureDevopsUserService azureDevopsUserService) : base("read", "Read work items assigned to a user")
+    {
+        Options.Add(AssignedToOption);
+        Options.Add(StateOption);
+
+        AssignedToOption.DefaultValueFactory = _ => Settings.UserEmail;
+
         _azureDevops = azureDevops;
+        _azureDevopsUserService = azureDevopsUserService;
     }
 
-    public override async Task<int> OnExecuteAsync(CommandLineApplication app)
+    protected override async Task<int> OnExecuteAsync(ParseResult context)
     {
+        var states = context.GetValue(StateOption) ?? [];
+        var assignedTo = context.GetValue(AssignedToOption);
+
+        if (assignedTo != Settings.UserEmail)
+        {
+            var user = await _azureDevopsUserService.GetOrSelectUserAsync(assignedTo);
+
+            if (user is NoAzureDevopsUserFound)
+            {
+                AnsiConsole.MarkupLine($"[red]No user found for '{assignedTo}'[/]");
+                return ExitCodes.ResourceNoFound;
+            }
+            else
+                assignedTo = user.Email;
+        }
+
+        return await ReadAndDisplayWorkItems(assignedTo, states);
+    }
+
+    public async Task<int> ReadAndDisplayWorkItems(string? assignedTo, WorkItemState[] states)
+    {
+        assignedTo ??= "@me";
+
         string stateFilterClause = string.Empty;
         {
-            var statesQuoted = State.Select(s => $"'{s}'");
+            var statesQuoted = states.Select(s => $"'{s}'");
             stateFilterClause = $"AND [System.State] IN ({string.Join(", ", statesQuoted)})";
         }
 
-        var assignedToClause = new AssignedUserWiqlQueryPart(base.EnvironmentSettings.UserEmail).Get(AssignedTo);
+        var assignedToClause = new AssignedUserWiqlQueryPart(base.Settings.UserEmail).Get(assignedTo);
 
         var rawQuery = $"""
                                 SELECT [System.Id], [System.WorkItemType], [System.Title], [System.State]
@@ -50,16 +82,27 @@ internal class WorkItemReadCommand : BaseCommand
 
         var wiql = new Wiql() { Query = cleanedQuery };
 
-        var result = await _azureDevops.GetClient<WorkItemTrackingHttpClient>().QueryByWiqlAsync(wiql);
+        Console.WriteLine($"Querying workitems");
 
-        var requestedFields = new[] { "System.Id", "System.WorkItemType", "System.State", "System.Title", "System.TeamProject" };
+        var result = await _azureDevops.GetClient<WorkItemTrackingHttpClient>().QueryByWiqlAsync(wiql, top: MaxAllowableNumbersOfWorkItems);
+
+        var requestedFields = new[] { 
+            AzureDevopsFields.WorkItemId, 
+            AzureDevopsFields.WorkItemType, 
+            AzureDevopsFields.WorkItemState,
+            AzureDevopsFields.WorkItemTitle, 
+            AzureDevopsFields.TeamProject,
+            AzureDevopsFields.IterationPath 
+        };
+
         var ids = result.WorkItems.Select(e => e.Id);
 
         if (!ids.Any())
         {
-            Console.WriteLine("No workitems found");
+            AnsiConsole.MarkupLine("No workitems found".WithSuccessMarkup());
             return ExitCodes.Ok;
         }
+
         var workItems = await _azureDevops.GetClient<WorkItemTrackingHttpClient>()
                                           .GetWorkItemsAsync(ids, fields: requestedFields);
 
@@ -67,16 +110,16 @@ internal class WorkItemReadCommand : BaseCommand
                     .Create()
                     .WithTitle("WorkItems")
                     .WithColumn("id", new(e => e.Id.ToString()))
-                    .WithColumn("title", new(e => e.Fields[requestedFields[3]].ToString()))
-                    .WithColumn("work item type", new(e => e.Fields[requestedFields[1]].ToString()))
-                    .WithColumn("state", new(e => e.Fields[requestedFields[2]].ToString()))
-                    .WithColumn("teamProject", new(e => e.Fields[requestedFields[4]].ToString()))
-                    .WithColumn("link", new(e => $"{new WorkItemLinkType(base.EnvironmentSettings.OrganizationUrl, 
-                                                e.Fields[requestedFields[4]]?.ToString() ?? "", e.Id).ToWorkItemUrl()}"))
+                    .WithColumn("title", new(e => e.Fields[AzureDevopsFields.WorkItemTitle].ToString()))
+                    .WithColumn("work item type", new(e => e.Fields[AzureDevopsFields.WorkItemType].ToString()))
+                    .WithColumn("state", new(e => e.Fields[AzureDevopsFields.WorkItemState].ToString()))
+                    .WithColumn("iteration", new(e => e.Fields[AzureDevopsFields.IterationPath].ToString()))
                     .WithRows(workItems)
                     .Build();
 
         AnsiConsole.Write(table);
+
+        AnsiConsole.MarkupLine($"Use '{WorkItemOpenCommand.CommandHelpText}' to open workitem in browswer \n");
 
         return ExitCodes.Ok;
     }

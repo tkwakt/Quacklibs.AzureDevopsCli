@@ -1,6 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+
+
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<Version>$(BaseVersion)</Version>
+	</PropertyGroup>
 	<PropertyGroup>
+		<BaseVersion>1.0.0</BaseVersion>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -8,7 +15,7 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>azdo</ToolCommandName>
 		<PackageOutputPath>./nupkg</PackageOutputPath>
-       <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Authors>Thijs Kwakernaak</Authors>
 		<Company>Linq IT </Company>
 		<Description>Toolbox that simplifies various (azure devops) tasks</Description>
@@ -16,17 +23,15 @@
 		<RepositoryUrl>Todo</RepositoryUrl>
 		<PackageLicenseUrl>none</PackageLicenseUrl>
 		<RepositoryType></RepositoryType>
-	  <UserSecretsId>c09ef858-441a-4792-8789-5d8eecc2a7fd</UserSecretsId>
-  </PropertyGroup>
+		<UserSecretsId>c09ef858-441a-4792-8789-5d8eecc2a7fd</UserSecretsId>
+	</PropertyGroup>
 
+	<Target Name="InstallGlobalTool" AfterTargets="Pack" Condition="'$(Configuration)' == 'Debug'">
+		<Exec Command="dotnet tool uninstall -g $(PackageId)" ContinueOnError="true" />
+		<Exec Command="dotnet tool install -g $(PackageId) --add-source &quot;$(PackageOutputPath)&quot;" />
+	</Target>
+	
 	<ItemGroup>
-	  <Compile Remove="Commands\Release-Notes\**" />
-	  <EmbeddedResource Remove="Commands\Release-Notes\**" />
-	  <None Remove="Commands\Release-Notes\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.8" />
@@ -37,14 +42,7 @@
 		<PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
 		<PackageReference Include="spectre.console" Version="0.50.0" />
 		<PackageReference Include="spectre.console.cli" Version="0.50.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EditorConfigFiles Remove="C:\Users\Thijs\source\repos\Quacklibs.AzureDevopsCli\Quacklibs.AzureDevopsCli\.editorconfig" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="C:\Users\Thijs\source\repos\Quacklibs.AzureDevopsCli\Quacklibs.AzureDevopsCli\.editorconfig" />
+		<PackageReference Include="System.CommandLine" Version="2.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>

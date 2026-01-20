@@ -1,55 +1,73 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Quacklibs.AzureDevopsCli.Commands.Configure;
-using Quacklibs.AzureDevopsCli.Commands.Login;
+using Quacklibs.AzureDevopsCli.Commands.Daily;
+using Quacklibs.AzureDevopsCli.Commands.Project;
 using Quacklibs.AzureDevopsCli.Commands.PullRequests;
-using Quacklibs.AzureDevopsCli.Commands.ReleaseNotes;
 using Quacklibs.AzureDevopsCli.Commands.SprintPlanning;
 using Quacklibs.AzureDevopsCli.Commands.WorkItems;
 using Quacklibs.AzureDevopsCli.Services;
-using System.Reflection;
-
 
 namespace Quacklibs.AzureDevopsCli
 {
-    [Command(Name = "azdev", Description = "an toolbox with options to make working with azure devops easier, quicker and better. ")]
-    [Subcommand(typeof(LoginCommand))]
-    [Subcommand(typeof(ConfigureCommand))]
-    [Subcommand(typeof(WorkItemCommand))]
-    [Subcommand(typeof(ReleaseNoteCommand))]
-    [Subcommand(typeof(PullRequestCommand))]
-    [Subcommand(typeof(SprintPlanningCommand))]
-    [HelpOption]
     internal class Program
     {
         public static IServiceProvider ServiceLocator { get; private set; }
-       public static int Main(string[] args)
+
+        public static int Main(string[] args)
         {
             var services = new ServiceCollection()
-             .AddSingleton<IConsole>(PhysicalConsole.Singleton)
-             .AddSingleton<SettingsService>()
-             .AddScoped<AzureDevopsService>()
-             .AddScoped<ICredentialStorage, CredentialStorage>()
-             .AddScoped<ConfigureReadCommand>()
-           .BuildServiceProvider();
+                .AddSingleton<SettingsService>()
+                .AddScoped<AzureDevopsService>()
+                .AddScoped<AzureDevopsUserService>()
+                .AddScoped<ICredentialStorage, CredentialStorage>()
+                .AddTransient<ConfigureCommand>()
+                  .AddTransient<ConfigureReadCommand>()
+                .AddTransient<DailyCommand>()
+                  .AddTransient<WorkItemCommand>()
+                  .AddTransient<WorkItemCreateCommand>()
+                  .AddTransient<WorkItemReadCommand>()
+                  .AddTransient<WorkItemOpenCommand>()
+                .AddTransient<ProjectCommand>()
+                  .AddTransient<ProjectReadCommand>()
+                .AddTransient<PullRequestCommand>()
+                  .AddTransient<PullRequestOpenCommand>()
+                  .AddTransient<PullRequestReadCommand>()
+                .AddTransient<SprintPlanningCommand>()
+                 .AddTransient<SprintPlanningUpdateCommand>()
+                 .AddTransient<DailyCommand>()
+                .BuildServiceProvider();
 
             ServiceLocator = services;
-            
-            var app = new CommandLineApplication<Program>();
-            app.Conventions
-                .UseDefaultConventions()
-                .UseConstructorInjection(services);
 
-            
-            return app.Execute(args);
-        }
+            // Root command
+            var root = new RootCommand("a toolbox with options to make working with azure devops easier, quicker and better.");
 
-        public int OnExecute(CommandLineApplication app, IConsole console)
-        {
-            console.WriteLine("You must specify a subcommand.");
-            console.WriteLine();
-            app.ShowHelp();
-            return 1;
+            //register all subcommands. The actions are registered in the subcommands's
+            var configureCommand = ServiceLocator.GetService<ConfigureCommand>()!;
+            var workItemCommand = ServiceLocator.GetService<WorkItemCommand>()!;
+            var pullRequestCommand = ServiceLocator.GetService<PullRequestCommand>()!;
+            var dailyCommand = ServiceLocator.GetService<DailyCommand>()!;
+            var projectCommand = ServiceLocator.GetService<ProjectCommand>()!;
+
+            root.Subcommands.Add(configureCommand);
+            root.Subcommands.Add(workItemCommand);
+            root.Subcommands.Add(pullRequestCommand);
+            root.Subcommands.Add(dailyCommand);
+            root.Subcommands.Add(projectCommand);
+
+            ParseResult parseResult = root.Parse(args);
+
+            if (parseResult.Errors.Count > 0)
+            {
+                foreach (var error in parseResult.Errors)
+                {
+                    Console.WriteLine($"Error: {error.Message}");
+                }
+                return ExitCodes.Error;
+            }
+
+            // Invoke
+            return parseResult.Invoke();
         }
     }
 }

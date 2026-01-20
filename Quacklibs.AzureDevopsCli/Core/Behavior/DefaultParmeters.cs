@@ -18,7 +18,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
             }
 
             var result = propertySelector.Compile().Invoke(target);
-            
+
             if (result is null || result is "")
             {
                 AnsiConsole.Write($"\n Parameter {selectedPropertyName} is requested, but was not filled");

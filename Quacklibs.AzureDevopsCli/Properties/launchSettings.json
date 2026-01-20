@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Quacklibs.AzureDevopsCli": {
+      "commandName": "Project",
+      "commandLineArgs": "daily"
+    }
+  }
+}

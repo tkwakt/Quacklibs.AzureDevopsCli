@@ -1,50 +1,47 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Options;
-using Microsoft.TeamFoundation.WorkItemTracking.Process.WebApi.Models.Process;
-using Microsoft.VisualStudio.Services.WebApi.Patch;
+﻿using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using Quacklibs.AzureDevopsCli.Services;
-using System.ComponentModel.DataAnnotations;
-using WorkItemType = Microsoft.TeamFoundation.WorkItemTracking.Process.WebApi.Models.Process.WorkItemType;
+using Quacklibs.AzureDevopsCli.Core;
+using Quacklibs.AzureDevopsCli.Core.Behavior;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 {
-    [Command("create", "-c")]
     internal class WorkItemCreateCommand : BaseCommand
     {
         private readonly AzureDevopsService _service;
-        private readonly EnvironmentConfiguration _options;
+        private readonly WorkItemReadCommand _workItemReadCommand;
 
-        [Option("-a|--assignedTo|--for")]
-        public string AssignedTo { get; set; }
-        
-        [Option("-t|--title")]
-        [Required]
-        public string Title { get; set; }
+        private Option<WorkItemKind> DefaultWorkItemType = new("--type")
+        {
+            Arity = ArgumentArity.ExactlyOne,
+            DefaultValueFactory = (_) => WorkItemKind.Task
+        };
 
-        [Option("-d|--description|--des")]
-        public string Description { get; set; } = string.Empty;
-        
-        [Option("--id|--parentid")]
-        [Required]
-        public int ParentId { get; set; }
-
-        [Option("--state")] 
-        public WorkItemState State { get; set; } = WorkItemState.New;
-
-        [Option("--type")]
-        public WorkItemKind WorkItemType { get; set; } = WorkItemKind.Task;
- 
-        public WorkItemCreateCommand(AzureDevopsService service, SettingsService options)
+        public WorkItemCreateCommand(AzureDevopsService service, WorkItemReadCommand workItemReadCommand) : base(CommandConstants.CreateCommand, "Create a new work item")
         {
             _service = service;
-            AssignedTo = base.EnvironmentSettings.UserEmail;
+            _workItemReadCommand = workItemReadCommand;
         }
-        
-        public override async Task<int> OnExecuteAsync(CommandLineApplication app)
+
+        protected override async Task<int> OnExecuteAsync(ParseResult parseResult)
         {
+            var workItemType = parseResult.GetValue(DefaultWorkItemType);
+            var assignedTo = base.Settings.UserEmail;
             var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
-            
+
+
+            //show the active & new workitems so the task can be put put under the correct parent
+            //refactor this into a method later
+            await _workItemReadCommand.ReadAndDisplayWorkItems(assignedTo: null, states: [WorkItemState.Active, WorkItemState.New, WorkItemState.Resolved]);
+
+            AnsiConsole.WriteLine($"\n Creating a new work item of type {workItemType}", new Style(foreground: Color.Green, decoration: Decoration.Bold));
+
+            Console.WriteLine("\n Title of the work item");
+            var title = Console.ReadLine();
+            Console.WriteLine("\n Description");
+            var description = Console.ReadLine();
+            Console.WriteLine("\n parentId - pick a parent from the list under which the task will be created");
+            var parentId = int.Parse(Console.ReadLine() ?? "0");
+
             var patchDocument = new JsonPatchDocument
             {
                 // Set title
@@ -52,7 +49,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
                 {
                     Operation = Operation.Add,
                     Path = "/fields/System.Title",
-                    Value = Title
+                    Value = title
                 },
                 // Description
                 new JsonPatchOperation
@@ -70,38 +67,39 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
                     {
                         //create a link from the task to the parent
                         rel = "System.LinkTypes.Hierarchy-Reverse",
-                        url = $"{_options.OrganizationUrl}/_apis/wit/workItems/{ParentId}",
+                        url = $"{base.Settings.OrganizationUrl}/_apis/wit/workItems/{parentId}",
                         attributes = new { comment = "Linked as child task" }
                     }
                 },
             };
-            if (!string.IsNullOrEmpty(AssignedTo))
+            if (!string.IsNullOrEmpty(assignedTo))
             {
                 patchDocument.Add(new JsonPatchOperation
                 {
                     Operation = Operation.Add,
                     Path = "/fields/System.AssignedTo",
-                    Value = AssignedTo
+                    Value = assignedTo
                 });
             }
 
-            // Get the parent work item. Adding this will ensure that the task get's shows on the current board
-            var parentWorkItem = await witClient.GetWorkItemAsync(ParentId, new[] { "System.IterationPath" });
+            // Get the parent work item. Adding this will ensure that the task get's shown on the current board
+            var parentWorkItem = await witClient.GetWorkItemAsync(parentId, [AzureDevopsFields.IterationPath, AzureDevopsFields.TeamProject]);
             var iterationPath = parentWorkItem.Fields["System.IterationPath"]?.ToString();
+            var teamProject = parentWorkItem.Fields[AzureDevopsFields.TeamProject]?.ToString();
 
             //add the iteration path from the parent
             if (!string.IsNullOrEmpty(iterationPath))
             {
-                 patchDocument.Add(new JsonPatchOperation
-                            {
-                                Operation = Operation.Add, 
-                                Path = "/fields/System.IterationPath",
-                                Value = iterationPath
-                            });
+                patchDocument.Add(new JsonPatchOperation
+                {
+                    Operation = Operation.Add,
+                    Path = "/fields/System.IterationPath",
+                    Value = iterationPath
+                });
             }
 
             // Create the task
-            var createdWorkItem = await witClient.CreateWorkItemAsync(patchDocument, _options.DefaultProject, type:WorkItemType.ToString());
+            var createdWorkItem = await witClient.CreateWorkItemAsync(patchDocument, teamProject, workItemType.ToString());
 
             if (createdWorkItem == null)
             {
@@ -109,11 +107,12 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
                 return ExitCodes.Ok;
             }
 
-            var uri = _options.ToWorkItemUrl(createdWorkItem.Id.Value, _options.DefaultProject);
-            
-            AnsiConsole.WriteLine($"\n created {createdWorkItem.Id}. Type: {this.WorkItemType.ToString()}");
+            var uri = new WorkItemLinkType(base.Settings.OrganizationUrl, createdWorkItem.Id!.Value).ToWorkItemUrl();
+
+            AnsiConsole.WriteLine($"\n created {createdWorkItem.Id}. Type: {workItemType.ToString()}");
             AnsiConsole.Write(uri, new Style(foreground: Color.Blue));
-      
+            AnsiConsole.WriteLine($"run {WorkItemOpenCommand.CommandHelpTextWithParameter(createdWorkItem.Id.Value)} to open");
+
             return ExitCodes.Ok;
         }
     }

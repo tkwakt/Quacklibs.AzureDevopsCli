@@ -1,5 +1,7 @@
-﻿using Microsoft.VisualStudio.Services.Common;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
+using Quacklibs.AzureDevopsCli.Commands.Configure;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli
@@ -7,23 +9,27 @@ namespace Quacklibs.AzureDevopsCli
     public class AzureDevopsService
     {
         private readonly SettingsService _settingsService;
-        private Lazy<VssConnection> _connection 
-            => new(() => CreatePATConnection(_settingsService.Settings.CurrentEnv().OrganizationUrl, _settingsService.Settings.CurrentEnv().PAT));
+        private Lazy<VssConnection> _connection
+            => new(() => CreatePATConnection(_settingsService.Settings.OrganizationUrl, _settingsService.Settings.PAT));
 
 
-        public AzureDevopsService(SettingsService settingsService)
+        public AzureDevopsService()
         {
-            _settingsService = settingsService;
+            _settingsService = Program.ServiceLocator.GetService<SettingsService>()!;
         }
 
-        
+
         public T GetClient<T>() where T : IVssHttpClient
         {
-            if(string.IsNullOrEmpty(_settingsService.Settings.CurrentEnv().OrganizationUrl))
-                AnsiConsole.Write($"Unable to create a connection, no {nameof(EnvironmentConfiguration.OrganizationUrl)} defined");
-            if(string.IsNullOrEmpty(_settingsService.Settings.CurrentEnv().PAT))
-                AnsiConsole.Write($"Unable to Authorize to azure devops, no {nameof(EnvironmentConfiguration.PAT)} defined");
-            
+            if (string.IsNullOrEmpty(_settingsService.Settings.OrganizationUrl))
+            {
+                throw new ArgumentException($"Unable to create a connection, no {nameof(Settings.OrganizationUrl)}. Set with {ConfigureCommand.CommandHelpText}");
+            }
+            if (string.IsNullOrEmpty(_settingsService.Settings.PAT))
+            {
+                throw new ArgumentException($"Unable to create a connection, no {nameof(Settings.PAT)}. Set with {ConfigureCommand.CommandHelpText}");
+            }
+
             return _connection.Value.GetClient<T>();
         }
 

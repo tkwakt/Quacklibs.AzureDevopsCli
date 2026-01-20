@@ -35,6 +35,14 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
         return this;
     }
 
+    public ISubColumnBuilder<T> WithColumn(string name, string value)
+    {
+        _table.AddColumn(name);
+        _columnValues.Add(new ColumnValue<T>(_ => value));
+
+        return this;
+    }
+
     public ISubColumnBuilder<T> WithSubColumn(string name, ColumnValue<T> valueSelector)
     {
         throw new NotImplementedException();
@@ -59,7 +67,7 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
     public Table Build()
     {
 
-        _table.Title = new TableTitle(_title, new Style(decoration: Decoration.Bold | Decoration.Underline));
+        _table.Title = new TableTitle(_title.EscapeMarkup(), new Style(decoration: Decoration.Bold | Decoration.Underline));
 
         foreach (var row in _rows)
         {
@@ -71,7 +79,7 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
         return _table;
     }
 
-    
+
 }
 
 public interface ITableBuilderStarter<T>

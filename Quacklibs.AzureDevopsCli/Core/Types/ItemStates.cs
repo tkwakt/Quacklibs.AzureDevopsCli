@@ -6,7 +6,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
         UserStory,
         Feature
     }
-    
+
     public enum WorkItemState
     {
         New,

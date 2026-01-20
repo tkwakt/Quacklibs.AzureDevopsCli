@@ -1,10 +1,10 @@
 ﻿global using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 global using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
-global using Microsoft.Extensions.Configuration;
-global using System;
-global using System.Diagnostics;
-global using System.IO;
-global using Spectre.Console;
-global using Quacklibs.AzureDevopsCli.Presentation.Tables;
-global using System.Diagnostics.CodeAnalysis;
 global using Quacklibs.AzureDevopsCli.Core.Types;
+global using Quacklibs.AzureDevopsCli.Presentation.Tables;
+global using Spectre.Console;
+global using System;
+global using System.CommandLine;
+global using System.Diagnostics;
+global using System.Diagnostics.CodeAnalysis;
+global using System.IO;

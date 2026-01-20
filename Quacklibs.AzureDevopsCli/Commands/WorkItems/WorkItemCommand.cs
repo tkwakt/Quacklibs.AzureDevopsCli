@@ -1,16 +1,12 @@
-﻿using McMaster.Extensions.CommandLineUtils;
-
-namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
+﻿namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 {
-
-    [Command("workitem", "wi", Description = "Create and read work items, add tasks etc")]
-    [Subcommand(typeof(WorkItemReadCommand))]
-    [Subcommand(typeof(WorkItemCreateCommand))]
-    [Subcommand(typeof(WorkItemOpenCommand))]
     internal class WorkItemCommand : BaseCommand
     {
-    } 
+        public WorkItemCommand(WorkItemCreateCommand createCommand, WorkItemReadCommand readCommand, WorkItemOpenCommand openCommand) : base("workitem", "Create read or open workitems", aliasses: "wi")
+        {
+            this.Subcommands.Add(createCommand);
+            this.Subcommands.Add(readCommand);
+            this.Subcommands.Add(openCommand);
+        }
+    }
 }
-
-
-

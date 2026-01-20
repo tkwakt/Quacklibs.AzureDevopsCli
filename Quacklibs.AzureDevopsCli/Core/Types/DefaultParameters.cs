@@ -1,41 +1,9 @@
 using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Core.Types
 {
     public class Settings
-    {
-        public string SelectedEnvironment { get; set; }
-        public Dictionary<string, EnvironmentConfiguration> EnvironmentConfigurations { get; set; } = new(StringComparer.InvariantCultureIgnoreCase);
-
-        public EnvironmentConfiguration CurrentEnv()
-        {
-            if (string.IsNullOrEmpty(SelectedEnvironment))
-                TryAddEnvironment("Default");
-
-            return EnvironmentConfigurations.TryGetValue(SelectedEnvironment, out var environmentSettings) ? environmentSettings : new EnvironmentConfiguration();
-        }
-
-        public bool TryAddEnvironment(string newEnvName)
-        {
-            if (EnvironmentConfigurations.TryGetValue(newEnvName, out var result))
-            {
-                Console.WriteLine("Environment already exists");
-                SelectedEnvironment = newEnvName;
-                return true;
-            }
-            else
-            {
-                EnvironmentConfigurations.Add(newEnvName, new EnvironmentConfiguration());
-                SelectedEnvironment = newEnvName;
-                Console.WriteLine($"New environment created: {SelectedEnvironment}");
-                return true;
-            }
-        }
-
-        public bool IsAuthenticated => !string.IsNullOrEmpty(CurrentEnv().PAT);
-    }
-    
-    public class EnvironmentConfiguration
     {
         public string OrganizationUrl { get; set; }
 
@@ -45,10 +13,21 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
 
         public string UserEmail { get; set; }
 
-        public string ToWorkItemUrl(int id, string project = "")
+        public bool IsAuthenticated => !string.IsNullOrEmpty(PAT);
+
+        public List<AppOptionKeyValue> GetDisplayableConfig()
         {
-            var workItemProject = string.IsNullOrEmpty(project) ? DefaultProject : project;
-            return $"{OrganizationUrl}/{workItemProject.Encode()}/_workitems/edit/{id}";
+            var props = this.GetType().GetProperties();
+            var result = new List<AppOptionKeyValue>();
+
+            foreach (var prop in props)
+            {
+                var value = prop.GetValue(this);
+
+                result.Add(new AppOptionKeyValue(prop.Name, value?.ToString()));
+            }
+
+            return result;
         }
     }
 }

@@ -4,8 +4,11 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
 {
     public static class WorkItemLink
     {
+        public static string ToWorkItemLink(this WorkItemLinkType type)
+            => type.ToWorkItemUrl().AsUrlMarkup("link");
+
         public static string ToWorkItemUrl(this WorkItemLinkType type)
-            => $"{type.organizationUrl}/{type.projectName.Encode()}/_workitems/edit/{type.workItemId}".AsUrlMarkup("link");
+           => $"{type.organizationUrl}/_workitems/edit/{type.workItemId}";
     }
 
     public static class AzureDevopsField
@@ -19,7 +22,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
                 var assignedToValue = result as IdentityRef;
                 return assignedToValue == null ? defaultValue : assignedToValue.DisplayName;
             }
- 
+
             return result == null ? defaultValue : result.ToString();
         }
     }

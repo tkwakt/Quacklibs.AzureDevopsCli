@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Quacklibs.AzureDevopsCli.Services
@@ -25,24 +24,8 @@ namespace Quacklibs.AzureDevopsCli.Services
             return Path.Join(homeUserProfile, ".devops", "config.json");
         }
 
-        public List<AppOptionKeyValue> GetConfig(EnvironmentConfiguration configuration)
-        {
-            var props = configuration.GetType().GetProperties();
-            var result = new List<AppOptionKeyValue>();
-
-            foreach (var prop in props)
-            {
-                var value = prop.GetValue(configuration);
-                                                   
-                result.Add(new AppOptionKeyValue(prop.Name, value?.ToString()));
-            }
-
-            return result;
-        }
-
-
         void Load()
-        
+
         {
             try
             {
@@ -93,29 +76,12 @@ namespace Quacklibs.AzureDevopsCli.Services
             }
         }
 
-        internal void Delete(string environment)
-        {
-            if (!string.IsNullOrEmpty(environment))                                   
-            {                                                                         
-                Settings.EnvironmentConfigurations.Remove(environment);               
-                Save(Settings);                                                       
-                return;                                                               
-            }                                                                         
-        }
-
         internal void Delete()
         {
-
-
-
-
-
-
-
             lock (_FileLock)
             {
                 if (File.Exists(this.GetConfigurationFilePath()))
-                {     
+                {
                     File.Delete(this.GetConfigurationFilePath());
                     Console.WriteLine("Configuration deleted");
                 }

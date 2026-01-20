@@ -13,9 +13,8 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
 
             if (result == null)
                 result = projects.FirstOrDefault(e => e.Name.Contains(searchQuery, StringComparison.InvariantCultureIgnoreCase));
-            
+
             return result == null ? null : new TeamProjectResult(result.Id, result.Name);
         }
-
     }
 }

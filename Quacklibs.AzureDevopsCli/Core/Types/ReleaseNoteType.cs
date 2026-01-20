@@ -1,6 +1,4 @@
-﻿using Spectre.Console.Rendering;
-
-namespace Quacklibs.AzureDevopsCli.Core.Types;
+﻿namespace Quacklibs.AzureDevopsCli.Core.Types;
 
 public record ReleaseNoteType(string Title)
 {
@@ -43,4 +41,3 @@ public record ReleasedFeature(string Status,
 public record MergedPullRequest(string Submitter, string Title, string Details);
 
 public record ReleasedWorkItem(string Name, string Status);
-

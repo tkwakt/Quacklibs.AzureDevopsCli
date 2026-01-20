@@ -1,18 +1,22 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 
 namespace Quacklibs.AzureDevopsCli.Services
 {
     public interface ICredentialStorage
     {
-       // string GetCredential(string username);
-       // void SetCredential(PersonalAccessToken pat);
+        // string GetCredential(string username);
+        // void SetCredential(PersonalAccessToken pat);
 
-       // void Delete();
+        // void Delete();
     }
 
     internal class CredentialStorage : ICredentialStorage
     {
+        private static readonly string SecretFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "azdo", "pat.dat");
+
         private readonly string tokenFilePath;
 
         public CredentialStorage()
@@ -56,7 +60,7 @@ namespace Quacklibs.AzureDevopsCli.Services
                     //var contentBytes = ProtectedData.Unprotect(protetedContentBytes, null, DataProtectionScope.CurrentUser);
                     //var jsonContent = Encoding.UTF8.GetString(contentBytes);
 
-                   
+
                     var credentials = JsonSerializer.Deserialize<Credentials>(credentialsJson);
 
                     result = credentials.PersonalAccessToken;
@@ -74,19 +78,63 @@ namespace Quacklibs.AzureDevopsCli.Services
         {
             try
             {
-                string jsonContent = JsonSerializer.Serialize(pat);
-               
-                //TODO: store this stuff somewhere safe
-                // var contentBytes = Encoding.UTF8.GetBytes(jsonContent);
+                Directory.CreateDirectory(Path.GetDirectoryName(SecretFile)!);
+                byte[] secretBytes = Encoding.UTF8.GetBytes(pat.Value);
 
-                //var protectedContentBytes = passwo.Protect(contentBytes, null, DataProtectionScope.CurrentUser);
-                //var protectedContentBytesBase64 = Convert.ToBase64String(protectedContentBytes);
-                File.WriteAllText(this.tokenFilePath, jsonContent);
+                // Encrypt using platform-specific method
+                byte[] encrypted = Encrypt(secretBytes);
+
+                File.WriteAllBytes(SecretFile, encrypted);
             }
             catch (PlatformNotSupportedException)
             {
                 Debug.WriteLine("Could not store credentials");
             }
+        }
+
+        private static byte[] Encrypt(byte[] data)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return ProtectedData.Protect(data, null, DataProtectionScope.CurrentUser);
+            }
+            else
+            {
+                // Linux / macOS use AES with a fixed key per user
+                using var aes = Aes.Create()!;
+                aes.Key = GetUserKey();
+                aes.GenerateIV();
+                using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                byte[] cipher = encryptor.TransformFinalBlock(data, 0, data.Length);
+                // Prepend IV for decryption
+                return aes.IV.Concat(cipher).ToArray();
+            }
+        }
+
+        private static byte[] Decrypt(byte[] data)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return ProtectedData.Unprotect(data, null, DataProtectionScope.CurrentUser);
+            }
+            else
+            {
+                using var aes = Aes.Create()!;
+                aes.Key = GetUserKey();
+                byte[] iv = data[..16];
+                byte[] cipher = data[16..];
+                using var decryptor = aes.CreateDecryptor(aes.Key, iv);
+                return decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+            }
+        }
+
+
+        private static byte[] GetUserKey()
+        {
+            // Derive a 256-bit key from username and machine
+            string keySource = Environment.UserName + "@" + Environment.MachineName;
+            using var sha = SHA256.Create();
+            return sha.ComputeHash(Encoding.UTF8.GetBytes(keySource));
         }
 
         private string GetTokenFile()

@@ -1,11 +1,11 @@
-using McMaster.Extensions.CommandLineUtils;
-
 namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
 {
-    [Command("pullrequest","pull-request","pr")]
-    [Subcommand(typeof(PullRequestReadCommand))]
     public class PullRequestCommand : BaseCommand
     {
-        
+        public PullRequestCommand(PullRequestOpenCommand openCommand, PullRequestReadCommand readCommand) : base("pullrequest", "Open an pull request by id", "pr")
+        {
+            this.Subcommands.Add(openCommand);
+            this.Subcommands.Add(readCommand);
+        }
     }
 }
