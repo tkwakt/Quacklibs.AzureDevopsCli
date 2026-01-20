@@ -6,7 +6,7 @@ using Quacklibs.AzureDevopsCli.Services;
 namespace Quacklibs.AzureDevopsCli.Commands.Daily
 {
     /// <summary>
-    /// WIP: Retrieve an overview of performed work. 
+    /// Retrieve an overview of performed work. 
     /// </summary>
     internal class DailyCommand : BaseCommand
     {
