@@ -22,9 +22,6 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
             value = Regex.Replace(value, @"<li[^>]*>", "• ", RegexOptions.IgnoreCase);
             value = Regex.Replace(value, @"</li>", "\n", RegexOptions.IgnoreCase);
 
-            //remove spans
-            value = Regex.Replace(value, @"</?span[^>]*>", "", RegexOptions.IgnoreCase);
-
             // Replace Azure DevOps mentions: <a data-vss-mention>...</a>
             value = Regex.Replace(value, @"<a[^>]*data-vss-mention[^>]*>(.*?)</a>", match => $"{Markup.Escape(match.Groups[1].Value.Trim())}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
@@ -41,8 +38,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
                 .Replace("<div>", "").Replace("</div>", "")
                 .Replace("<div>", "").Replace("</div>", "")
 
-                // Line breaks
-                .Replace("</span>", "[/]")
+          
                 .Pipe(s => Regex.Replace(s, @"<a\s+href\s*=\s*""([^""]+)""\s*>(.*?)</a>",
                       match => $"[link={match.Groups[1].Value}]{match.Groups[2].Value}[/]")); ;
         }
