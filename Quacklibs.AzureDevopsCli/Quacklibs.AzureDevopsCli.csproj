@@ -7,7 +7,7 @@
 		<Version>$(BaseVersion)</Version>
 	</PropertyGroup>
 	<PropertyGroup>
-		<BaseVersion>1.0.0</BaseVersion>
+		<BaseVersion>0.0.1</BaseVersion>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -19,11 +19,13 @@
 		<Authors>Thijs Kwakernaak</Authors>
 		<Company>Linq IT </Company>
 		<Description>Toolbox that simplifies various (azure devops) tasks</Description>
-		<PackageProjectUrl>Todo</PackageProjectUrl>
-		<RepositoryUrl>Todo</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/tkwakt/Quacklibs.AzureDevopsCli</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/tkwakt/Quacklibs.AzureDevopsCli</RepositoryUrl>
 		<PackageLicenseUrl>none</PackageLicenseUrl>
-		<RepositoryType></RepositoryType>
+		<RepositoryType>git</RepositoryType>
 		<UserSecretsId>c09ef858-441a-4792-8789-5d8eecc2a7fd</UserSecretsId>
+		<Title>Azure devops CLI - Get an overview of a daily, query workItems and more</Title>
+		<PackageTags>azure devops, toolkit, workitem, daily, automate, azdo</PackageTags>
 	</PropertyGroup>
 
 	<Target Name="InstallGlobalTool" AfterTargets="Pack" Condition="'$(Configuration)' == 'Debug'">
@@ -41,7 +43,6 @@
 		<PackageReference Include="Microsoft.Extensions.Options" Version="9.0.8" />
 		<PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
 		<PackageReference Include="spectre.console" Version="0.50.0" />
-		<PackageReference Include="spectre.console.cli" Version="0.50.0" />
 		<PackageReference Include="System.CommandLine" Version="2.0.1" />
 	</ItemGroup>
 

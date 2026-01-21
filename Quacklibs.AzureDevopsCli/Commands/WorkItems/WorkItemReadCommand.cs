@@ -9,7 +9,7 @@ internal class WorkItemReadCommand : BaseCommand
     private const int MaxAllowableNumbersOfWorkItems = 200;
 
 
-    private Option<string> AssignedToOption = new("--for");
+    private Option<string> For = new("--for");
 
     public Option<WorkItemState[]> StateOption = new("--state")
     {
@@ -22,10 +22,10 @@ internal class WorkItemReadCommand : BaseCommand
 
     public WorkItemReadCommand(AzureDevopsService azureDevops, AzureDevopsUserService azureDevopsUserService) : base("read", "Read work items assigned to a user")
     {
-        Options.Add(AssignedToOption);
+        Options.Add(For);
         Options.Add(StateOption);
 
-        AssignedToOption.DefaultValueFactory = _ => Settings.UserEmail;
+        For.DefaultValueFactory = _ => Settings.UserEmail;
 
         _azureDevops = azureDevops;
         _azureDevopsUserService = azureDevopsUserService;
@@ -34,7 +34,7 @@ internal class WorkItemReadCommand : BaseCommand
     protected override async Task<int> OnExecuteAsync(ParseResult context)
     {
         var states = context.GetValue(StateOption) ?? [];
-        var assignedTo = context.GetValue(AssignedToOption);
+        var assignedTo = context.GetValue(For);
 
         if (assignedTo != Settings.UserEmail)
         {

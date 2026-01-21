@@ -13,8 +13,6 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
 
         public string UserEmail { get; set; }
 
-        public bool IsAuthenticated => !string.IsNullOrEmpty(PAT);
-
         public List<AppOptionKeyValue> GetDisplayableConfig()
         {
             var props = this.GetType().GetProperties();
@@ -24,7 +22,10 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
             {
                 var value = prop.GetValue(this);
 
-                result.Add(new AppOptionKeyValue(prop.Name, value?.ToString()));
+                if (prop.Name == nameof(PAT))
+                    result.Add(new AppOptionKeyValue(prop.Name, "***************"));
+                else
+                    result.Add(new AppOptionKeyValue(prop.Name, value?.ToString()));
             }
 
             return result;

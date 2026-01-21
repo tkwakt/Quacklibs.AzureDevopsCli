@@ -10,8 +10,12 @@ namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
     {
         private readonly AzureDevopsService _service;
 
+        private Option<string> For = new("--for"); //WIP /`/ TODO
+
         public PullRequestReadCommand(AzureDevopsService service) : base("read", "Read pull requests for the current user")
         {
+            this.Options.Add(For);
+            For.DefaultValueFactory = _ => Settings.UserEmail;
             _service = service;
         }
 
@@ -19,7 +23,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
         {
             var gitClient = _service.GetClient<GitHttpClient>();
             var identityClient = _service.GetClient<LocationHttpClient>();
-            var userEmail = Settings.GetSettingSafe(e => Settings.UserEmail);
+            var userEmail = parseResult.GetValue(For);
 
             var identiesWithThisUserId = await identityClient.GetConnectionDataAsync(ConnectOptions.None, lastChangeId: -1);
 

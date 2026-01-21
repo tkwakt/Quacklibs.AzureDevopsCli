@@ -1,5 +1,6 @@
 ﻿using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Quacklibs.AzureDevopsCli.Core.Behavior;
 using Quacklibs.AzureDevopsCli.Core.Types.DailyReport;
 using Quacklibs.AzureDevopsCli.Services;
 
@@ -15,7 +16,12 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
         public Option<string> For = new("--for")
         {
             Required = false,
-            Description = "The emailaddress for which to generate an daily report"
+            Description = "Filter the report by person. The value can be an email address or (part of) a name. \" +\r\n" +
+                          "If multiple users match, an interactive selection is shown.\r\n" +
+                          "The person is interpreted as the primary actor per type:\r\n" +
+                          "  - Commits / pull requests: author \r\n" +
+                          "  - Work items: changed by \r\n " 
+
         };
 
         public Option<string> Since = new(sinceOption, "-s")
@@ -23,7 +29,8 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             Required = false,
             Description = "The number of days to include in the report untill now",
             Arity = ArgumentArity.ExactlyOne,
-            DefaultValueFactory = _ => "9d"
+            DefaultValueFactory = _ => "3d",
+            HelpName = "<yesterday|3d|21-01-2026|>"
         };
 
         private readonly AzureDevopsService _azdevopsService;
@@ -37,12 +44,13 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             _azdevopsService = azdevopsService;
             _azdevopsUserService = azdevopsUserService;
             For.DefaultValueFactory = _ => Settings.UserEmail;
+            Since.CompletionSources.Add(ctx => SinceParser.ToCompletionOptions());
         }
 
         protected override async Task<int> OnExecuteAsync(ParseResult context)
         {
             string? generateReportForUser = context.GetValue(For);
-            string? sinceValue = context.GetValue(Since);
+            var sinceInput = new SinceType(context.GetValue(Since));
 
             var projects = await _azdevopsService.GetClient<ProjectHttpClient>()
                                                  .GetProjects(stateFilter: ProjectState.WellFormed);
@@ -56,7 +64,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             }
 
             AnsiConsole.WriteLine($"\n using {targetUser.Email} \n");
-            var dailyReportTimeRange = ParseDailyReportTimeRange(sinceValue);
+            var dailyReportTimeRange = sinceInput.ToDateTimeRange();
 
             var dailyReport = new DailyReport(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
             await AnsiConsole.Status().Spinner(Spinner.Known.Ascii).StartAsync($"Querying {projects.Count} projects", async ctx =>
@@ -205,33 +213,6 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             }
 
             return commitChanges;
-        }
-
-        private (DateTime from, DateTime till) ParseDailyReportTimeRange(string? userInputForSinceParameter)
-        {
-            string errorText = $"The since parameter '{userInputForSinceParameter}' is invalid. Please provide a valid number followed by 'd' for days or 'w' for weeks. Example: {sinceOption} 7d or {sinceOption} 2w";
-
-            if (string.IsNullOrEmpty(userInputForSinceParameter))
-                throw new ArgumentException(errorText);
-
-            // Everything before the unit should be the number
-            bool hasValidAmountIdentifier = int.TryParse(userInputForSinceParameter[..^1], out int amountIdentifier);
-            string timeRangeIdentifier = userInputForSinceParameter[^1].ToString().ToLowerInvariant();
-
-            if (!hasValidAmountIdentifier)
-                throw new ArgumentException(errorText);
-
-            var daysInPast = timeRangeIdentifier switch
-            {
-                "d" => amountIdentifier,
-                "w" => amountIdentifier * 7,
-                _ => amountIdentifier //invalid or no input? default to days
-            };
-
-            var from = DateTime.Today.AddDays(daysInPast * -1);
-            var to = DateTime.Now;
-
-            return (from, to);
         }
     }
 }
