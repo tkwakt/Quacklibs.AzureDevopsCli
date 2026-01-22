@@ -38,19 +38,19 @@ public static class SinceParser
 
         var fixedSince = since.Value.ToLowerInvariant() switch
         {
-            "today"     => new DateTimeRangeType(from: now.Date, till: now),
-            "yesterday" => new DateTimeRangeType(from: now.Date.AddDays(-1), till: now.Date),
-            "monday"    => FromDayOfWeek(now, DayOfWeek.Monday),
-            "tuesday"   => FromDayOfWeek(now, DayOfWeek.Tuesday),
+            "today" => new DateTimeRangeType(from: now.Date, till: now),
+            "yesterday" => new DateTimeRangeType(from: now.Date.AddDays(-1), till: now),
+            "monday" => FromDayOfWeek(now, DayOfWeek.Monday),
+            "tuesday" => FromDayOfWeek(now, DayOfWeek.Tuesday),
             "wednesday" => FromDayOfWeek(now, DayOfWeek.Wednesday),
-            "thursday"  => FromDayOfWeek(now, DayOfWeek.Thursday),
-            "friday"    => FromDayOfWeek(now, DayOfWeek.Friday),
-            "saturday"  => FromDayOfWeek(now, DayOfWeek.Saturday),
-            "sunday"    => FromDayOfWeek(now, DayOfWeek.Sunday),
-            "thisweek"  => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek), till: now),
-            "lastweek"  => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek - 7), till: now.Date.AddDays(-(int)now.DayOfWeek)),
+            "thursday" => FromDayOfWeek(now, DayOfWeek.Thursday),
+            "friday" => FromDayOfWeek(now, DayOfWeek.Friday),
+            "saturday" => FromDayOfWeek(now, DayOfWeek.Saturday),
+            "sunday" => FromDayOfWeek(now, DayOfWeek.Sunday),
+            "thisweek" => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek), till: now),
+            "lastweek" => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek - 7), till: now.Date.AddDays(-(int)now.DayOfWeek)),
             "thismonth" => new DateTimeRangeType(from: new DateTime(now.Year, now.Month, 1), till: now),
-            _           => null
+            _ => null
         };
 
         if (fixedSince != null)
@@ -58,17 +58,19 @@ public static class SinceParser
 
         // relatieve periodes: 3d
         if (since.Value.EndsWith("d", StringComparison.InvariantCultureIgnoreCase) && int.TryParse(since.Value[..^1], out var days))
-            return new DateTimeRangeType(from: now.AddDays(-days), till: now);
+        {
+            return new DateTimeRangeType(from: now.Date.AddDays(-days), till: now);
+        }
 
         // datum in dd-MM-yyyy of yyyy-MM-dd
         if (DateTime.TryParseExact(since.Value, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate) || DateTime.TryParse(since.Value, out parsedDate))
             return new DateTimeRangeType(from: parsedDate, till: now);
 
         throw new ArgumentException($"Invalid value for since value '{since.Value}'. \n" +
-                                     "Valid options include: \n" +
-                                     "  fixed periods: today, yesterday, monday, tuesday, ..., thisweek, lastweek, thismonth \n" +
-                                     "  relative periods: 1d, 3d, 2w, ... \n" +
-                                     "  Dates: dd-MM-yyyy or yyyy-MM-dd");
+                                    "Valid options include: \n" +
+                                    "  fixed periods: today, yesterday, monday, tuesday, ..., thisweek, lastweek, thismonth \n" +
+                                    "  relative periods: 1d, 3d, 2w, ... \n" +
+                                    "  Dates: dd-MM-yyyy or yyyy-MM-dd");
     }
 
     private static DateTimeRangeType FromDayOfWeek(DateTime now, DayOfWeek day)
@@ -95,6 +97,3 @@ public static class SinceParser
         _ => $"Fixed anchor: {label}"
     };
 }
-
-
-

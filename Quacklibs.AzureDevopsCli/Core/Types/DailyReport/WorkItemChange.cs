@@ -65,7 +65,7 @@ public class WorkItemStateChanged : WorkItemChange
         ToState = toState;
     }
 
-    public override string DisplayText => $"{ChangeDate.ToShortDateString()} From {FromState} to {ToState}";
+    public override string DisplayText => $"{ChangeDate.ToShortDateString()} {ChangeDate.ToShortTimeString()} From {FromState} to {ToState}";
     public override string DisplayType => "State Changed";
 }
 
@@ -81,7 +81,7 @@ public class WorkItemCreated : WorkItemChange
         State = state;
     }
 
-    public override string DisplayText => $"{CreatedDate.ToShortDateString()} Created in state {State}";
+    public override string DisplayText => $"{CreatedDate.ToShortDateString()} {CreatedDate.ToShortTimeString()}  Created in state {State}";
     public override string DisplayType => "Workitem Created";
 }
 
@@ -99,6 +99,6 @@ public class WorkItemCommentChanged : WorkItemChange
         Comment = new(comment.Trim());
     }
 
-    public override string DisplayText => $"{ChangeDate.ToShortDateString()} by: {CommentAuthor}  {Comment.ToSpectreConsoleMarkup()} ";
+    public override string DisplayText => $"{ChangeDate.ToShortDateString()} {ChangeDate.ToShortTimeString()} by: {CommentAuthor}  {Comment.ToSpectreConsoleMarkup()} ";
     public override string DisplayType => "Comment added";
 }
