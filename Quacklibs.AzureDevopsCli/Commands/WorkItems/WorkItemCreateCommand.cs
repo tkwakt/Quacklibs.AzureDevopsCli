@@ -28,9 +28,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
             var assignedTo = base.Settings.UserEmail;
             var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
 
-
-            //show the active & new workitems so the task can be put put under the correct parent
-            //refactor this into a method later
+            //show the active & new workitems so the task can be put under the correct parent
             await _workItemReadCommand.ReadAndDisplayWorkItems(assignedTo: null, states: [WorkItemState.Active, WorkItemState.New, WorkItemState.Resolved]);
 
             AnsiConsole.WriteLine($"\n Creating a new work item of type {workItemType}", new Style(foreground: Color.Green, decoration: Decoration.Bold));
@@ -56,7 +54,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
                 {
                     Operation = Operation.Add,
                     Path = "/fields/System.Description",
-                    Value = Description
+                    Value = description
                 },
                 // Link to parent
                 new JsonPatchOperation

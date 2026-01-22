@@ -1,4 +1,5 @@
 ﻿using Microsoft.TeamFoundation.Core.WebApi;
+using Quacklibs.AzureDevopsCli.Core.Behavior;
 using System.Collections;
 
 namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
@@ -23,7 +24,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
         public void GenerateReport()
         {
             Console.WriteLine("\n");
-            Console.WriteLine($"Daily Report for changes from {From.Date.ToShortDateString()} to {To.Date.ToShortDateString()} for {ForUser}");
+            Console.WriteLine($"Daily Report for changes from {From:dd-MM-yyyy HH:mm} to {To:dd-MM-yyyy HH:mm} for {ForUser}");
 
             var projectsWithChanges = InternalDailyReportEntry.Where(re => re.hasChanges());
 
@@ -46,7 +47,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
 
                     foreach (var workItemChange in parentWorkItem)
                     {
-                        var workItemNode = root.AddNode($"[bold]{workItemChange.Id} {workItemChange.Title.EscapeMarkup()}[/]");
+                        var workItemNode = root.AddNode($"{workItemChange.Id} {workItemChange.Title.EscapeMarkup().Highlight()}");
 
                         foreach (var item in workItemChange.Changes)
                         {
@@ -60,16 +61,16 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
 
                 AnsiConsole.WriteLine();
 
-                var CommitTree = new Tree($"Commit");
+                var cmmitTree = new Tree($"Commit");
                 foreach (var commitChange in dailyProjectEntry.CommitChanges)
                 {
-                    CommitTree.AddNode($"{commitChange.CreatedAt} Commit {commitChange.Author} {commitChange.Comment}");
+                    cmmitTree.AddNode($"{commitChange.CreatedAt} Commit {commitChange.Author} {commitChange.Comment}");
                 }
 
-                if (CommitTree.Nodes.Any())
+                if (cmmitTree.Nodes.Any())
                 {
                     Console.WriteLine();
-                    AnsiConsole.Write(CommitTree);
+                    AnsiConsole.Write(cmmitTree);
                 }
             }
         }

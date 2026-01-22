@@ -25,12 +25,14 @@
 		<RepositoryType>git</RepositoryType>
 		<UserSecretsId>c09ef858-441a-4792-8789-5d8eecc2a7fd</UserSecretsId>
 		<Title>Azure devops CLI - Get an overview of a daily, query workItems and more</Title>
-		<PackageTags>azure devops, toolkit, workitem, daily, automate, azdo</PackageTags>
+		<PabvbckageTags>azure devops, toolkit, workitem, daily, automate, azdo</PabvbckageTags>
 	</PropertyGroup>
 
+    <!-- install the global tool locally, using a private nuget feed that points to athe package output path. The use of a 
+    private feed prevents conflicts with (existing) private feeds --> 
 	<Target Name="InstallGlobalTool" AfterTargets="Pack" Condition="'$(Configuration)' == 'Debug'">
 		<Exec Command="dotnet tool uninstall -g $(PackageId)" ContinueOnError="true" />
-		<Exec Command="dotnet tool install -g $(PackageId) --add-source &quot;$(PackageOutputPath)&quot;" />
+        <Exec Command='dotnet tool install -g $(PackageId) --configfile "nuget.local.config"' />
 	</Target>
 	
 	<ItemGroup>
@@ -49,6 +51,9 @@
 	<ItemGroup>
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="nuget.local.config">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 

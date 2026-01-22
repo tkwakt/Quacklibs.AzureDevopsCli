@@ -97,15 +97,17 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
         public async Task<ProjectWorkItemChanges> GetChangedWorkItems(DateTime from, DateTime till, string forEmail)
         {
+            var fromUtc = from.ToString("yyyy-MM-dd");
+            var tillUtc = till.ToString("yyyy-MM-dd");
             // Work Items changed by the user
             string wiqlQuery = $"""
                                SELECT [System.Id], [System.Title], [System.ChangedDate]
                                FROM WorkItems
                                WHERE [System.ChangedBy] = '{forEmail}'
-                               AND [System.ChangedDate] >= '{from:yyyy-MM-dd}T00:00:00Z'
-                               AND [System.ChangedDate] < '{till:yyyy-MM-dd}T00:00:00Z'
+                               AND [System.ChangedDate] >= '{fromUtc}'
+                               AND [System.ChangedDate] <= '{tillUtc}'
                                """;
-
+            
             var client = _azdevopsService.GetClient<WorkItemTrackingHttpClient>();
 
             var wiql = new Wiql() { Query = wiqlQuery };

@@ -9,32 +9,28 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
         public static string CommandHelpText => $"{BaseCommandHelpText} (id)";
         public static string CommandHelpTextWithParameter(int workItemId) => $"{BaseCommandHelpText} {workItemId}";
 
-        public string Project { get; set; }
-        public int Id { get; set; }
-
-        public Option<int> WorkItemIdOption = new("--id");
-        public Argument<int> WorkItemIdArgument = new("The ID of the pull request to open");
-
+        private Option<int> WorkItemIdOption = new("--id");
+        private Argument<int> WorkItemIdArgument = new("The ID of the work item to open");
 
         public WorkItemOpenCommand() : base("open", "Open a work item in the browser")
         {
-            Project = base.Settings.DefaultProject;
+            this.Options.Add(WorkItemIdOption);
+            this.Arguments.Add(WorkItemIdArgument);
         }
 
-        protected override async Task<int> OnExecuteAsync(ParseResult context)
+        protected override Task<int> OnExecuteAsync(ParseResult context)
         {
-            int pullRequestIdOption = context.GetValue(WorkItemIdOption);
-            int pullRequestIdArgument = context.GetValue(WorkItemIdArgument);
+            int workItemIdOption = context.GetValue(WorkItemIdOption);
+            int workItemIdArgument = context.GetValue(WorkItemIdArgument);
 
-            var pullRequestId = pullRequestIdOption != 0 ? pullRequestIdOption : pullRequestIdArgument;
+            var workItemId = workItemIdOption != 0 ? workItemIdOption : workItemIdArgument;
 
-            string uri = $"{base.Settings.OrganizationUrl}/_workitems/edit/{Id}";
+            string uri = $"{base.Settings.OrganizationUrl}/_workitems/edit/{workItemId}";
 
             Console.WriteLine($"Opening {uri}");
             Browser.Open(uri);
-
-
-            return ExitCodes.Ok;
+            
+            return Task.FromResult(ExitCodes.Ok);
         }
     }
 }
