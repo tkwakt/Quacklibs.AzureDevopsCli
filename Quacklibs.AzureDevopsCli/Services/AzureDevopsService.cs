@@ -13,9 +13,9 @@ namespace Quacklibs.AzureDevopsCli
             => new(() => CreatePATConnection(_settingsService.Settings.OrganizationUrl, _settingsService.Settings.PAT));
 
 
-        public AzureDevopsService()
+        public AzureDevopsService(SettingsService settings)
         {
-            _settingsService = Program.ServiceLocator.GetService<SettingsService>()!;
+            _settingsService = settings;
         }
 
 

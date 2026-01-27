@@ -46,6 +46,7 @@ public class DefaultTable<T>
         {
             var columnValues = _columnValues.Select(columnValues => columnValues.ToString(row))
                                             .ToArray();
+
             _table.AddRow(columnValues);
         }
 

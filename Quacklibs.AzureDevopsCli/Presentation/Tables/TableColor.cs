@@ -12,4 +12,8 @@ public class TableColor
 
     public static TableColor White => new("[white]");
     public static TableColor Skyblue => new("[skyblue]");
+
+
+    public string ToMarkup(string text) => $"{Value}{text}[/]";
 }
+

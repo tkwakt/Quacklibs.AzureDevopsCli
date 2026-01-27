@@ -8,3 +8,5 @@ global using System.CommandLine;
 global using System.Diagnostics;
 global using System.Diagnostics.CodeAnalysis;
 global using System.IO;
+global using Quacklibs.AzureDevopsCli.Core;
+global using Quacklibs.AzureDevopsCli.Core.Behavior;

@@ -30,5 +30,4 @@ public abstract class BaseCommand : System.CommandLine.Command
         Console.WriteLine("no parameter provided. append --help to the command see the available options");
         return Task.FromResult(ExitCodes.Ok);
     }
-
 }

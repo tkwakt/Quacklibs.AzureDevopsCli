@@ -36,9 +36,6 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
                 .Replace("<em>", "[italic]").Replace("</em>", "[/]")
                 .Replace("<u>", "[underline]").Replace("</u>", "[/]")
                 .Replace("<div>", "").Replace("</div>", "")
-                .Replace("<div>", "").Replace("</div>", "")
-
-          
                 .Pipe(s => Regex.Replace(s, @"<a\s+href\s*=\s*""([^""]+)""\s*>(.*?)</a>",
                       match => $"[link={match.Groups[1].Value}]{match.Groups[2].Value}[/]")); ;
         }

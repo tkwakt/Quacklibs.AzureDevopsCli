@@ -71,7 +71,7 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
 
         foreach (var row in _rows)
         {
-            var columnValues = _columnValues.Select(columnValues => columnValues.ToString(row))
+            var columnValues = _columnValues.Select(columnValues => columnValues.Render(row))
                                             .ToArray();
             _table.AddRow(columnValues);
         }

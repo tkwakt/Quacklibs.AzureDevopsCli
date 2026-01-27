@@ -11,7 +11,7 @@ namespace Quacklibs.AzureDevopsCli
 {
     internal class Program
     {
-        public static IServiceProvider ServiceLocator { get; private set; }
+        internal static ServiceProvider ServiceLocator;
 
         public static int Main(string[] args)
         {
@@ -23,7 +23,7 @@ namespace Quacklibs.AzureDevopsCli
                 .AddTransient<ConfigureCommand>()
                   .AddTransient<ConfigureReadCommand>()
                 .AddTransient<DailyCommand>()
-                  .AddTransient<WorkItemCommand>()
+                .AddTransient<WorkItemCommand>()
                   .AddTransient<WorkItemCreateCommand>()
                   .AddTransient<WorkItemReadCommand>()
                   .AddTransient<WorkItemOpenCommand>()
