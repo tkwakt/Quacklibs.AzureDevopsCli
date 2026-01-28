@@ -1,8 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-
-
-
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<Version>$(BaseVersion)</Version>
 	</PropertyGroup>
@@ -28,7 +24,7 @@
 		<PabvbckageTags>azure devops, toolkit, workitem, daily, automate, azdo</PabvbckageTags>
 	</PropertyGroup>
 
-    <!-- install the global tool locally, using a private nuget feed that points to athe package output path. The use of a 
+    <!-- install the global tool locally, using a private nuget feed that points to the package output path. The use of a 
     private feed prevents conflicts with (existing) private feeds --> 
 	<Target Name="InstallGlobalTool" AfterTargets="Pack" Condition="'$(Configuration)' == 'Debug'">
 		<Exec Command="dotnet tool uninstall -g $(PackageId)" ContinueOnError="true" />
