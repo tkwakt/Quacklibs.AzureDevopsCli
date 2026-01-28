@@ -1,5 +1,4 @@
 ﻿
-using Quacklibs.AzureDevopsCli.Core;
 
 namespace Quacklibs.AzureDevopsCli.Commands.Configure
 {

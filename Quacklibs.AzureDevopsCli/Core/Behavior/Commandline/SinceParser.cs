@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.IO;
 
-namespace Quacklibs.AzureDevopsCli.Core.Behavior;
+namespace Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
 
 public class SinceCompletionItem : CompletionItem
 {
@@ -26,6 +26,7 @@ public static class SinceParser
         "sunday",
         "thisweek",
         "lastweek",
+        "lastworkday",
         "thismonth",
         "nd",
         "dd-MM-yyyy",
@@ -40,15 +41,16 @@ public static class SinceParser
         {
             "today" => new DateTimeRangeType(from: now.Date, till: now),
             "yesterday" => new DateTimeRangeType(from: now.Date.AddDays(-1), till: now),
-            "monday" => FromDayOfWeek(now, DayOfWeek.Monday),
-            "tuesday" => FromDayOfWeek(now, DayOfWeek.Tuesday),
-            "wednesday" => FromDayOfWeek(now, DayOfWeek.Wednesday),
-            "thursday" => FromDayOfWeek(now, DayOfWeek.Thursday),
-            "friday" => FromDayOfWeek(now, DayOfWeek.Friday),
-            "saturday" => FromDayOfWeek(now, DayOfWeek.Saturday),
-            "sunday" => FromDayOfWeek(now, DayOfWeek.Sunday),
+            "monday" => FromPreviousDayOfWeek(now, DayOfWeek.Monday),
+            "tuesday" => FromPreviousDayOfWeek(now, DayOfWeek.Tuesday),
+            "wednesday" => FromPreviousDayOfWeek(now, DayOfWeek.Wednesday),
+            "thursday" => FromPreviousDayOfWeek(now, DayOfWeek.Thursday),
+            "friday" => FromPreviousDayOfWeek(now, DayOfWeek.Friday),
+            "saturday" => FromPreviousDayOfWeek(now, DayOfWeek.Saturday),
+            "sunday" => FromPreviousDayOfWeek(now, DayOfWeek.Sunday),
             "thisweek" => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek), till: now),
             "lastweek" => new DateTimeRangeType(from: now.Date.AddDays(-(int)now.DayOfWeek - 7), till: now.Date.AddDays(-(int)now.DayOfWeek)),
+            "lastworkday" => LastWorkDay(now),
             "thismonth" => new DateTimeRangeType(from: new DateTime(now.Year, now.Month, 1), till: now),
             _ => null
         };
@@ -73,10 +75,23 @@ public static class SinceParser
                                     "  Dates: dd-MM-yyyy or yyyy-MM-dd");
     }
 
-    private static DateTimeRangeType FromDayOfWeek(DateTime now, DayOfWeek day)
+    private static DateTimeRangeType FromPreviousDayOfWeek(DateTime now, DayOfWeek day)
     {
-        var from = now.Date.AddDays(-(now.DayOfWeek - day));
+        int diff = (7 + (now.DayOfWeek - day)) % 7;
+
+        var from = now.Date.AddDays(-diff);
+
         return new DateTimeRangeType(from: from, till: now);
+    }
+
+    private static DateTimeRangeType LastWorkDay(DateTime now)
+    {
+        return now.DayOfWeek switch
+        {
+            DayOfWeek.Monday => new DateTimeRangeType(from: now.Date.AddDays(-3), till: now),
+            DayOfWeek.Sunday => new DateTimeRangeType(from: now.Date.AddDays(-2), till: now),
+            _ => new DateTimeRangeType(from: now.Date.AddDays(-1), till: now)
+        };
     }
 
     public static IEnumerable<SinceCompletionItem> ToCompletionOptions()

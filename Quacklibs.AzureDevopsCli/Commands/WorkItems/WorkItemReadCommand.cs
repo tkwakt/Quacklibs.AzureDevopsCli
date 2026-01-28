@@ -1,6 +1,8 @@
 ﻿using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
 using Quacklibs.AzureDevopsCli.Services;
 using System;
+using System.CommandLine;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;
 
@@ -9,9 +11,9 @@ internal class WorkItemReadCommand : BaseCommand
     private const int MaxAllowableNumbersOfWorkItems = 200;
 
 
-    private Option<string> For = new("--for");
+    private Option<string> _forOption = new(CommandOptionConstants.ForOptionName);
 
-    public Option<WorkItemState[]> StateOption = new("--state")
+    private Option<WorkItemState[]> _stateOption = new("--state")
     {
         Arity = ArgumentArity.OneOrMore,
         DefaultValueFactory = (_) => [WorkItemState.New, WorkItemState.Active]
@@ -20,12 +22,15 @@ internal class WorkItemReadCommand : BaseCommand
     private readonly AzureDevopsService _azureDevops;
     private readonly AzureDevopsUserService _azureDevopsUserService;
 
-    public WorkItemReadCommand(AzureDevopsService azureDevops, AzureDevopsUserService azureDevopsUserService) : base("read", "Read work items assigned to a user")
+    public WorkItemReadCommand(AzureDevopsService azureDevops, AzureDevopsUserService azureDevopsUserService) : base(CommandConstants.ReadCommand, "Read work items assigned to a user")
     {
-        Options.Add(For);
-        Options.Add(StateOption);
+        Options.Add(_forOption);
+        Options.Add(_stateOption);
 
-        For.DefaultValueFactory = _ => Settings.UserEmail;
+        var complationItems = CompletiontionItems.FromEnum<WorkItemState>().ToArray();
+        _stateOption.CompletionSources.Add(ctx => complationItems);
+
+        _forOption.DefaultValueFactory = _ => Settings.UserEmail;
 
         _azureDevops = azureDevops;
         _azureDevopsUserService = azureDevopsUserService;
@@ -33,23 +38,23 @@ internal class WorkItemReadCommand : BaseCommand
 
     protected override async Task<int> OnExecuteAsync(ParseResult context)
     {
-        var states = context.GetValue(StateOption) ?? [];
-        var assignedTo = context.GetValue(For);
+        var states = context.GetValue(_stateOption) ?? [];
+        var forUser = context.GetValue(_forOption);
 
-        if (assignedTo != Settings.UserEmail)
+        if (forUser != Settings.UserEmail)
         {
-            var user = await _azureDevopsUserService.GetOrSelectUserAsync(assignedTo);
+            var user = await _azureDevopsUserService.GetOrSelectUserAsync(forUser);
 
             if (user is NoAzureDevopsUserFound)
             {
-                AnsiConsole.MarkupLine($"[red]No user found for '{assignedTo}'[/]");
+                AnsiConsole.MarkupLine($"No user found for '{forUser}'".WithWarningMarkup());
                 return ExitCodes.ResourceNoFound;
             }
             else
-                assignedTo = user.Email;
+                forUser = user.Email;
         }
 
-        return await ReadAndDisplayWorkItems(assignedTo, states);
+        return await ReadAndDisplayWorkItems(forUser, states);
     }
 
     public async Task<int> ReadAndDisplayWorkItems(string? assignedTo, WorkItemState[] states)

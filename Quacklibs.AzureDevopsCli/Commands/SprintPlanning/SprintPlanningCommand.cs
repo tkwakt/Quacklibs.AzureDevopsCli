@@ -2,8 +2,9 @@
 {
     internal class SprintPlanningCommand : BaseCommand
     {
-        public SprintPlanningCommand() : base("sprintplanning", "Tools to help with sprint planning")
+        public SprintPlanningCommand(SprintPlanningUpdateCommand updateCommand) : base("sprintplanning", "Tools to help with sprint planning")
         {
+            this.Subcommands.Add(updateCommand);
         }
     }
 }

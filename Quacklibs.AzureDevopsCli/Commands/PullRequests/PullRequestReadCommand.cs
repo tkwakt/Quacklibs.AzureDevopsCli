@@ -1,41 +1,46 @@
 using Microsoft.TeamFoundation.SourceControl.WebApi;
-using Microsoft.VisualStudio.Services.Location.Client;
-using Microsoft.VisualStudio.Services.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Services;
 using System.Collections.Concurrent;
 
 namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
 {
-    public class PullRequestReadCommand : BaseCommand
+    internal class PullRequestReadCommand : BaseCommand
     {
         private readonly AzureDevopsService _service;
+        private readonly AzureDevopsUserService _azdevopsUserService;
 
-        private Option<string> For = new("--for"); //WIP /`/ TODO
+        private readonly Option<string> _forOption = new(CommandOptionConstants.ForOptionName);
 
-        public PullRequestReadCommand(AzureDevopsService service) : base("read", "Read pull requests for the current user")
+        public PullRequestReadCommand(AzureDevopsService service, AzureDevopsUserService azdevopsUserService) : base(CommandConstants.ReadCommand, "Read pull requests for the current user")
         {
-            this.Options.Add(For);
-            For.DefaultValueFactory = _ => Settings.UserEmail;
             _service = service;
+            _azdevopsUserService = azdevopsUserService;
+
+            Options.Add(_forOption);
+            _forOption.DefaultValueFactory = _ => Settings.UserEmail;
         }
 
         protected override async Task<int> OnExecuteAsync(ParseResult parseResult)
         {
             var gitClient = _service.GetClient<GitHttpClient>();
-            var identityClient = _service.GetClient<LocationHttpClient>();
-            var userEmail = parseResult.GetValue(For);
 
-            var identiesWithThisUserId = await identityClient.GetConnectionDataAsync(ConnectOptions.None, lastChangeId: -1);
+            var user = parseResult.GetValue(_forOption);
 
-            Console.WriteLine($"Querying for {identiesWithThisUserId.AuthenticatedUser.DisplayName}");
-            var identity = identiesWithThisUserId.AuthenticatedUser.Id;
+            //TODO: Test if the ID returned here is the correct one, or if the locationHTTPClient needs to be used to resolve the descriptor to an ID
+            var targetUser = await _azdevopsUserService.GetOrSelectUserAsync(user);
+            Console.WriteLine($"Querying for {targetUser.Email}");
+            var identityGuid = targetUser.Id;
 
+            if (targetUser is NoAzureDevopsUserFound)
+            {
+                AnsiConsole.WriteLine("No user found");
+                return ExitCodes.ResourceNoFound;
+            }
 
             List<GitRepository> repositories = await gitClient.GetRepositoriesAsync();
             var sanitizedRepos = repositories.Where(e => e?.IsDisabled is false)
                                              .Where(e => e?.IsInMaintenance is false)
                                              .ToList();
-
 
             var allRelevantPrs = new ConcurrentBag<GitPullRequest>();
 
@@ -51,11 +56,15 @@ namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
                     var createdPRs = await gitClient.GetPullRequestsAsync(repo.Id, new GitPullRequestSearchCriteria
                     {
                         Status = PullRequestStatus.Active,
-                        CreatorId = identiesWithThisUserId.AuthenticatedUser.Id
+                        CreatorId = identityGuid,
                     }, cancellationToken: cancellationToken);
 
                     // Get PRs where current user is a reviewer
-                    var reviewerPRs = await gitClient.GetPullRequestsAsync(repo.Id, new GitPullRequestSearchCriteria { Status = PullRequestStatus.Active, ReviewerId = identiesWithThisUserId.AuthenticatedUser.Id }, cancellationToken: cancellationToken);
+                    var reviewerPRs = await gitClient.GetPullRequestsAsync(repo.Id, new GitPullRequestSearchCriteria
+                    {
+                        Status = PullRequestStatus.Active,
+                        ReviewerId = identityGuid
+                    }, cancellationToken: cancellationToken);
 
                     // Combine and deduplicate by PR ID
                     createdPRs.AddRange(reviewerPRs);

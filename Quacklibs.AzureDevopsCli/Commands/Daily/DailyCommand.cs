@@ -1,6 +1,6 @@
 ﻿using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
 using Quacklibs.AzureDevopsCli.Core.Types.DailyReport;
 using Quacklibs.AzureDevopsCli.Services;
 
@@ -11,12 +11,10 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
     /// </summary>
     internal class DailyCommand : BaseCommand
     {
-        private const string sinceOption = "--since";
-
-        public Option<string> For = new("--for")
+        private readonly Option<string> _forOption = new(CommandOptionConstants.ForOptionName)
         {
             Required = false,
-            Description = "Filter the report by person. The value can be an email address or (part of) a name. \" +\r\n" +
+            Description = "Filter the report by person. The value can be an email address or (part of) a name. \r\n" +
                           "If multiple users match, an interactive selection is shown.\r\n" +
                           "The person is interpreted as the primary actor per type:\r\n" +
                           "  - Commits / pull requests: author \r\n" +
@@ -24,13 +22,12 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
         };
 
-        public Option<string> Since = new(sinceOption, "-s")
+        private readonly Option<string> _sinceOption = new(CommandOptionConstants.SinceOptionName, CommandOptionConstants.SinceOptionAliasses)
         {
             Required = false,
-            Description = "The number of days to include in the report untill now",
+            Description = "The number of days to include in the report untill now.",
             Arity = ArgumentArity.ExactlyOne,
-            DefaultValueFactory = _ => "3d",
-            HelpName = "<yesterday|3d|21-01-2026|>"
+            DefaultValueFactory = _ => "lastworkday",
         };
 
         private readonly AzureDevopsService _azdevopsService;
@@ -38,28 +35,29 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
         public DailyCommand(AzureDevopsService azdevopsService, AzureDevopsUserService azdevopsUserService) : base("daily", "Overview of the work done of the last X days")
         {
-            Options.Add(For);
-            Options.Add(Since);
+            Options.Add(_forOption);
+            Options.Add(_sinceOption);
 
             _azdevopsService = azdevopsService;
             _azdevopsUserService = azdevopsUserService;
-            For.DefaultValueFactory = _ => Settings.UserEmail;
-            Since.CompletionSources.Add(ctx => SinceParser.ToCompletionOptions());
+
+            _forOption.DefaultValueFactory = _ => Settings.UserEmail;
+            _sinceOption.CompletionSources.Add(ctx => SinceParser.ToCompletionOptions());
         }
 
         protected override async Task<int> OnExecuteAsync(ParseResult context)
         {
-            string? generateReportForUser = context.GetValue(For);
-            var sinceInput = new SinceType(context.GetValue(Since));
+            string? forUser = context.GetValue(_forOption);
+            var sinceInput = new SinceType(context.GetValue(_sinceOption));
 
             var projects = await _azdevopsService.GetClient<ProjectHttpClient>()
                                                  .GetProjects(stateFilter: ProjectState.WellFormed);
 
-            var targetUser = await _azdevopsUserService.GetOrSelectUserAsync(generateReportForUser);
+            var targetUser = await _azdevopsUserService.GetOrSelectUserAsync(forUser);
 
             if(targetUser is NoAzureDevopsUserFound usr)
             {
-                AnsiConsole.WriteLine("No user found or selected");
+                AnsiConsole.MarkupLine("No user found or selected".WithWarningMarkup());
                 return ExitCodes.ResourceNoFound;
             }
 
@@ -71,7 +69,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             {
 
                 ctx.Status = "Querying workitems";
-                //TODO: workitem can be queried org wide. commits cannot
+                
                 var allWorkItems = await GetChangedWorkItems(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
                 var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
 

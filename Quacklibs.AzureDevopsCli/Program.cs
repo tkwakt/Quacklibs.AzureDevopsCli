@@ -34,7 +34,7 @@ namespace Quacklibs.AzureDevopsCli
                   .AddTransient<PullRequestReadCommand>()
                 .AddTransient<SprintPlanningCommand>()
                  .AddTransient<SprintPlanningUpdateCommand>()
-                 .AddTransient<DailyCommand>()
+                .AddTransient<DailyCommand>()
                 .BuildServiceProvider();
 
             ServiceLocator = services;
@@ -48,12 +48,14 @@ namespace Quacklibs.AzureDevopsCli
             var pullRequestCommand = ServiceLocator.GetService<PullRequestCommand>()!;
             var dailyCommand = ServiceLocator.GetService<DailyCommand>()!;
             var projectCommand = ServiceLocator.GetService<ProjectCommand>()!;
+            var sprintPlanningCommand = ServiceLocator.GetService<SprintPlanningCommand>()!;
 
             root.Subcommands.Add(configureCommand);
             root.Subcommands.Add(workItemCommand);
             root.Subcommands.Add(pullRequestCommand);
             root.Subcommands.Add(dailyCommand);
             root.Subcommands.Add(projectCommand);
+            root.Subcommands.Add(sprintPlanningCommand);
 
             ParseResult parseResult = root.Parse(args);
 
@@ -61,12 +63,11 @@ namespace Quacklibs.AzureDevopsCli
             {
                 foreach (var error in parseResult.Errors)
                 {
-                    Console.WriteLine($"Error: {error.Message}");
+                    AnsiConsole.MarkupLine($"Error: {error.Message}".WithErrorMarkup());
                 }
                 return ExitCodes.Error;
             }
 
-            // Invoke
             return parseResult.Invoke();
         }
     }

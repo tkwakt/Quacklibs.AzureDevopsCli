@@ -3,7 +3,6 @@ using Microsoft.TeamFoundation.Core.WebApi.Types;
 using Microsoft.TeamFoundation.Work.WebApi;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
 using Quacklibs.AzureDevopsCli.Services;
 
 
@@ -17,7 +16,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
 
         public string AssignedTo { get; set; } = "@all";
 
-        public SprintPlanningUpdateCommand(AzureDevopsService service, SettingsService options) : base("update", "Move workitems from one sprint to another")
+        public SprintPlanningUpdateCommand(AzureDevopsService service, SettingsService options) : base(CommandConstants.UpdateCommand, "Move workitems from one sprint to another")
         {
             _service = service;
 

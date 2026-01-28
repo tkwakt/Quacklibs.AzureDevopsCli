@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using Quacklibs.AzureDevopsCli.Core;
 using Quacklibs.AzureDevopsCli.Core.Behavior;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 {
@@ -10,7 +11,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
         private readonly AzureDevopsService _service;
         private readonly WorkItemReadCommand _workItemReadCommand;
 
-        private Option<WorkItemKind> DefaultWorkItemType = new("--type")
+        private Option<WorkItemKind> _workItemKindOption = new("--type")
         {
             Arity = ArgumentArity.ExactlyOne,
             DefaultValueFactory = (_) => WorkItemKind.Task
@@ -20,11 +21,16 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
         {
             _service = service;
             _workItemReadCommand = workItemReadCommand;
+
+            var complationItems = CompletiontionItems.FromEnum<WorkItemKind>().ToArray();
+            _workItemKindOption.CompletionSources.Add(ctx => complationItems);
+
+            this.Options.Add(_workItemKindOption);
         }
 
         protected override async Task<int> OnExecuteAsync(ParseResult parseResult)
         {
-            var workItemType = parseResult.GetValue(DefaultWorkItemType);
+            var workItemType = parseResult.GetValue(_workItemKindOption);
             var assignedTo = base.Settings.UserEmail;
             var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
 
