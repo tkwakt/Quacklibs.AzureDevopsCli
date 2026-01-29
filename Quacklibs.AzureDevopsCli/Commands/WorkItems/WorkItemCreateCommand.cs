@@ -75,7 +75,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
             //add the iteration path from the parent
             if (!string.IsNullOrEmpty(iterationPath))
             { 
-                patchDocument.Add(CreatePatchOperation(Operation.Add, "/fields/System.IterationPath", iterationPath);
+                patchDocument.Add(CreatePatchOperation(Operation.Add, "/fields/System.IterationPath", iterationPath));
             }
 
             // Create the task

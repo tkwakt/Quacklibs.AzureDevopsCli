@@ -25,11 +25,11 @@ internal class WorkItemUpdateCommand : BaseCommand
     };
 
     private Option<int> _workItemIdOption = new("--id");
-    private Argument<int> _workItemIdArgument = new("The ID of the work item to open");
 
-    public Option<WorkItemState> _newState = new("--state", "-s")
+    public Option<WorkItemState?> _newState = new("--state", "-s")
     {
         Required = false,
+        Description = "The new state to set the work item to."
     };
 
     public WorkItemUpdateCommand(AzureDevopsService service, AzureDevopsUserService userService) : base(CommandConstants.UpdateCommand, "Update a workitem", "u")
@@ -40,9 +40,9 @@ internal class WorkItemUpdateCommand : BaseCommand
         _newState.CompletionSources.Add(ctx => completionSources);
 
         Options.Add(_workItemIdOption);
-        Arguments.Add(_workItemIdArgument);
         Options.Add(_newState);
         Options.Add(_commentOption);
+        Options.Add(_forOption);
     }
 
 
@@ -51,8 +51,7 @@ internal class WorkItemUpdateCommand : BaseCommand
         var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
 
         // Resolve work item ID
-        var workItemId = parseResult.GetValue(_workItemIdOption) != 0 ? parseResult.GetValue(_workItemIdOption) : parseResult.GetValue(_workItemIdArgument);
-
+        var workItemId =  parseResult.GetValue(_workItemIdOption);
         if (workItemId <= 0)
         {
             AnsiConsole.MarkupLine($"A valid work item ID is required. Run {WorkItemReadCommand.CommandText} to get an overview of active workitems".WithErrorMarkup());
