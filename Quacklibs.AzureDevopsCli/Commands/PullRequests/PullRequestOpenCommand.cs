@@ -1,5 +1,4 @@
 using Microsoft.TeamFoundation.SourceControl.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
 
 namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
 {

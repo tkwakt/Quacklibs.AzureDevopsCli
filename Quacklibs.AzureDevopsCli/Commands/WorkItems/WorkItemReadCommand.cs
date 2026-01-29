@@ -1,6 +1,4 @@
 ﻿using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation
+﻿namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation
 {
     public static class SpectreMarkup
     {

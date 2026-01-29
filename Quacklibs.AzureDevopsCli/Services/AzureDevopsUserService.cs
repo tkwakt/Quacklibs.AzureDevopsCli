@@ -1,10 +1,4 @@
-﻿using Microsoft.TeamFoundation.SourceControl.WebApi;
-using Microsoft.VisualStudio.Services.Graph.Client;
-using Microsoft.VisualStudio.Services.Identity;
-using Microsoft.VisualStudio.Services.Identity.Client;
-using Microsoft.VisualStudio.Services.Users;
-using Microsoft.VisualStudio.Services.WebApi;
-using Spectre.Console;
+﻿using Microsoft.VisualStudio.Services.Graph.Client;
 
 namespace Quacklibs.AzureDevopsCli.Services
 {

@@ -1,7 +1,6 @@
 ﻿using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
 using Quacklibs.AzureDevopsCli.Core.Types.DailyReport;
 using Quacklibs.AzureDevopsCli.Services;
 

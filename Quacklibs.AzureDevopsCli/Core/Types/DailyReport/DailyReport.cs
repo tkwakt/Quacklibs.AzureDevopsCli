@@ -1,6 +1,4 @@
-﻿using Microsoft.TeamFoundation.Core.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
-using System.Collections;
+﻿using System.Collections;
 
 namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
 {

@@ -1,4 +1,3 @@
-using Quacklibs.AzureDevopsCli.Core.Behavior;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Core.Types

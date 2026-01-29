@@ -1,6 +1,3 @@
-using Quacklibs.AzureDevopsCli.Core;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
-
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 {
     public class WorkItemOpenCommand : BaseCommand

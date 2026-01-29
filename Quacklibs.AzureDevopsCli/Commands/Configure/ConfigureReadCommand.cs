@@ -1,7 +1,4 @@
-﻿using Microsoft.TeamFoundation.Core.WebApi;
-using Quacklibs.AzureDevopsCli.Core;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
-using Quacklibs.AzureDevopsCli.Services;
+﻿using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Commands.Configure
 {

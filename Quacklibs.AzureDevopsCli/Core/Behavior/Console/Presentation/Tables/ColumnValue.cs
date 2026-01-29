@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using Spectre.Console.Extensions;
-using Spectre.Console.Rendering;
+﻿using Spectre.Console.Rendering;
 
 namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 

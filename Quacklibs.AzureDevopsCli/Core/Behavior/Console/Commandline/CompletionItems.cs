@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.CommandLine.Completions;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine.Completions;
 
 namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline
 {

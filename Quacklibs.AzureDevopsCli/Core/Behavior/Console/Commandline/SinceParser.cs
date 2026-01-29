@@ -1,6 +1,5 @@
 ﻿using System.CommandLine.Completions;
 using System.Globalization;
-using System.IO;
 
 namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
 

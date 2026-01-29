@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Primitives;
-using Microsoft.VisualStudio.Services.WebApi.Patch;
+﻿using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;

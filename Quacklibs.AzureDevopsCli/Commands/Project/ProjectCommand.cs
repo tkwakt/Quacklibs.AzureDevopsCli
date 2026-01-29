@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Quacklibs.AzureDevopsCli.Commands.Project
+﻿namespace Quacklibs.AzureDevopsCli.Commands.Project
 {
     public class ProjectCommand : BaseCommand
     {

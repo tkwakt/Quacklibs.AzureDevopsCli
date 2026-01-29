@@ -1,5 +1,4 @@
 ﻿using Microsoft.TeamFoundation.Core.WebApi;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 
 
 namespace Quacklibs.AzureDevopsCli.Commands.Project
