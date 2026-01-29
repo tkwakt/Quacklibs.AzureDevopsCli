@@ -44,44 +44,27 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
             Console.WriteLine("\n parentId - pick a parent from the list under which the task will be created");
             var parentId = int.Parse(Console.ReadLine() ?? "0");
 
+            var linkFromTaskToParent = new
+            {
+                //create a link from the task to the parent
+                rel = "System.LinkTypes.Hierarchy-Reverse",
+                url = $"{base.Settings.OrganizationUrl}/_apis/wit/workItems/{parentId}",
+                attributes = new { comment = "Linked as child task" }
+            };
+
             var patchDocument = new JsonPatchDocument
             {
-                // Set title
-                new JsonPatchOperation
-                {
-                    Operation = Operation.Add,
-                    Path = "/fields/System.Title",
-                    Value = title
-                },
-                // Description
-                new JsonPatchOperation
-                {
-                    Operation = Operation.Add,
-                    Path = "/fields/System.Description",
-                    Value = description
-                },
-                // Link to parent
-                new JsonPatchOperation
-                {
-                    Operation = Operation.Add,
-                    Path = "/relations/-",
-                    Value = new
-                    {
-                        //create a link from the task to the parent
-                        rel = "System.LinkTypes.Hierarchy-Reverse",
-                        url = $"{base.Settings.OrganizationUrl}/_apis/wit/workItems/{parentId}",
-                        attributes = new { comment = "Linked as child task" }
-                    }
-                },
+                //title
+                CreatePatchOperation(Operation.Add, "/fields/System.Title", title),
+                //description
+                CreatePatchOperation(Operation.Add, "/fields/System.Description", description),
+                //link to parent
+                CreatePatchOperation(Operation.Add, "/relations/-", linkFromTaskToParent),
             };
+
             if (!string.IsNullOrEmpty(assignedTo))
             {
-                patchDocument.Add(new JsonPatchOperation
-                {
-                    Operation = Operation.Add,
-                    Path = "/fields/System.AssignedTo",
-                    Value = assignedTo
-                });
+                patchDocument.Add(CreatePatchOperation(Operation.Add, "/fields/System.AssignedTo", assignedTo));
             }
 
             // Get the parent work item. Adding this will ensure that the task get's shown on the current board
@@ -91,13 +74,8 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 
             //add the iteration path from the parent
             if (!string.IsNullOrEmpty(iterationPath))
-            {
-                patchDocument.Add(new JsonPatchOperation
-                {
-                    Operation = Operation.Add,
-                    Path = "/fields/System.IterationPath",
-                    Value = iterationPath
-                });
+            { 
+                patchDocument.Add(CreatePatchOperation(Operation.Add, "/fields/System.IterationPath", iterationPath);
             }
 
             // Create the task
@@ -116,6 +94,26 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
             AnsiConsole.WriteLine($"run {WorkItemOpenCommand.CommandHelpTextWithParameter(createdWorkItem.Id.Value)} to open");
 
             return ExitCodes.Ok;
+        }
+
+        public JsonPatchOperation CreatePatchOperation(Operation operation, string path, string newValue)
+        {
+            return new JsonPatchOperation
+            {
+                Operation = operation,
+                Path = path,
+                Value = newValue
+            };
+        }
+
+        public JsonPatchOperation CreatePatchOperation(Operation operation, string path, object newValue)
+        {
+            return new JsonPatchOperation
+            {
+                Operation = operation,
+                Path = path,
+                Value = newValue
+            };
         }
     }
 }
