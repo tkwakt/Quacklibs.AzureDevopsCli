@@ -1,8 +1,6 @@
 ﻿using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
-using Quacklibs.AzureDevopsCli.Core;
-using Quacklibs.AzureDevopsCli.Core.Behavior;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
 {
@@ -35,7 +33,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.WorkItems
             var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
 
             //show the active & new workitems so the task can be put under the correct parent
-            await _workItemReadCommand.ReadAndDisplayWorkItems(assignedTo: null, states: [WorkItemState.Active, WorkItemState.New, WorkItemState.Resolved]);
+            await _workItemReadCommand.ReadAndDisplayWorkItems(assignedTo: null, states: [WorkItemState.Active, WorkItemState.New]);
 
             AnsiConsole.WriteLine($"\n Creating a new work item of type {workItemType}", new Style(foreground: Color.Green, decoration: Decoration.Bold));
 

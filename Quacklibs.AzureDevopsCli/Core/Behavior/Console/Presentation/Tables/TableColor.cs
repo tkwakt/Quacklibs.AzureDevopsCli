@@ -1,4 +1,4 @@
-﻿namespace Quacklibs.AzureDevopsCli.Presentation.Tables;
+﻿namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 
 
 public class TableColor

@@ -1,4 +1,4 @@
-﻿namespace Quacklibs.AzureDevopsCli.Presentation.Tables;
+﻿namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 
 /// <summary>
 /// Easily create tables. This objects ensures that all our tables will look the same. 

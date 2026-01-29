@@ -3,6 +3,8 @@ using Microsoft.TeamFoundation.Core.WebApi.Types;
 using Microsoft.TeamFoundation.Work.WebApi;
 using Microsoft.VisualStudio.Services.WebApi.Patch;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 using Quacklibs.AzureDevopsCli.Services;
 
 

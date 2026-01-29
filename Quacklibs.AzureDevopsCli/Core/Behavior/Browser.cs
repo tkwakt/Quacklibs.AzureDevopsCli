@@ -22,12 +22,12 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
                 }
                 else
                 {
-                    Console.WriteLine("Unsupported OS.");
+                    AnsiConsole.WriteLine("Unsupported OS.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to open browser: {ex.Message}");
+                AnsiConsole.WriteLine($"Failed to open browser: {ex.Message}");
             }
         }
     }

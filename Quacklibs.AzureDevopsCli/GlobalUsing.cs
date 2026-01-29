@@ -1,7 +1,6 @@
 ﻿global using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
 global using Microsoft.TeamFoundation.WorkItemTracking.WebApi.Models;
 global using Quacklibs.AzureDevopsCli.Core.Types;
-global using Quacklibs.AzureDevopsCli.Presentation.Tables;
 global using Spectre.Console;
 global using System;
 global using System.CommandLine;
@@ -10,3 +9,5 @@ global using System.Diagnostics.CodeAnalysis;
 global using System.IO;
 global using Quacklibs.AzureDevopsCli.Core;
 global using Quacklibs.AzureDevopsCli.Core.Behavior;
+global using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
+global using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;

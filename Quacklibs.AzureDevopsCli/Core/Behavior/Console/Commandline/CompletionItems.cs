@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Quacklibs.AzureDevopsCli.Core.Behavior.Commandline
+namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline
 {
 
 

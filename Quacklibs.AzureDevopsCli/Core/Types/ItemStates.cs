@@ -12,7 +12,6 @@ namespace Quacklibs.AzureDevopsCli.Core.Types
         New,
         Active,
         Closed,
-        Resolved,
         Removed
     }
 }

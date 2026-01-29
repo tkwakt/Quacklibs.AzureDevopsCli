@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Quacklibs.AzureDevopsCli.Core.Behavior
+namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation
 {
     public static class SpectreMarkup
     {
@@ -17,5 +17,12 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
         public static string WithWarningMarkup(this string text) => $"[yellow]{text}[/]"; 
         public static string WithErrorMarkup(this string text) => $"[red]{text}[/]";
         public static string WithSuccessMarkup(this string text) => $"[green]{text}[/]";
+    }
+
+
+    public static class AnsiConsoleExtensions
+    {
+        public static string AsUrlMarkup(this string url, string displayText = "link")
+            => $"[Link={url}]{displayText}[/]";
     }
 }

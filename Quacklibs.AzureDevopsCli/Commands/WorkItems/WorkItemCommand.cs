@@ -2,11 +2,12 @@
 {
     internal class WorkItemCommand : BaseCommand
     {
-        public WorkItemCommand(WorkItemCreateCommand createCommand, WorkItemReadCommand readCommand, WorkItemOpenCommand openCommand) : base("workitem", "Create read or open workitems", aliasses: "wi")
+        public WorkItemCommand(WorkItemCreateCommand createCommand, WorkItemReadCommand readCommand, WorkItemOpenCommand openCommand, WorkItemUpdateCommand updateCommand) : base("workitem", "Create read or open workitems", aliasses: "wi")
         {
-            this.Subcommands.Add(createCommand);
-            this.Subcommands.Add(readCommand);
-            this.Subcommands.Add(openCommand);
+            Subcommands.Add(createCommand);
+            Subcommands.Add(readCommand);
+            Subcommands.Add(openCommand);
+            Subcommands.Add(updateCommand);
         }
     }
 }

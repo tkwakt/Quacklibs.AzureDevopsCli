@@ -1,4 +1,6 @@
 using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 using Quacklibs.AzureDevopsCli.Services;
 using System.Collections.Concurrent;
 

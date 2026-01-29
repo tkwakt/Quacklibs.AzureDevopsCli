@@ -26,9 +26,4 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
             return result == null ? defaultValue : result.ToString();
         }
     }
-    public static class AnsiConsoleExtensions
-    {
-        public static string AsUrlMarkup(this string url, string displayText = "link")
-            => $"[Link={url}]{displayText}[/]";
-    }
 }

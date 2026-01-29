@@ -5,6 +5,7 @@ using Quacklibs.AzureDevopsCli.Commands.Project;
 using Quacklibs.AzureDevopsCli.Commands.PullRequests;
 using Quacklibs.AzureDevopsCli.Commands.SprintPlanning;
 using Quacklibs.AzureDevopsCli.Commands.WorkItems;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
 using Quacklibs.AzureDevopsCli.Services;
 
 namespace Quacklibs.AzureDevopsCli
@@ -27,6 +28,7 @@ namespace Quacklibs.AzureDevopsCli
                   .AddTransient<WorkItemCreateCommand>()
                   .AddTransient<WorkItemReadCommand>()
                   .AddTransient<WorkItemOpenCommand>()
+                  .AddTransient<WorkItemUpdateCommand>()
                 .AddTransient<ProjectCommand>()
                   .AddTransient<ProjectReadCommand>()
                 .AddTransient<PullRequestCommand>()

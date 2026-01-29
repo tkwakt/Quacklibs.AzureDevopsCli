@@ -1,14 +1,15 @@
-﻿using Quacklibs.AzureDevopsCli.Core.Behavior;
-using Quacklibs.AzureDevopsCli.Core.Behavior.Commandline;
+﻿using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 using Quacklibs.AzureDevopsCli.Services;
-using System;
-using System.CommandLine;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;
 
 internal class WorkItemReadCommand : BaseCommand
 {
     private const int MaxAllowableNumbersOfWorkItems = 200;
+
+    public const string CommandText = $"{CommandConstants.BaseCommand} workitem {CommandConstants.ReadCommand}";
 
 
     private Option<string> _forOption = new(CommandOptionConstants.ForOptionName);

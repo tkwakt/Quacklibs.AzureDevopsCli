@@ -2,7 +2,7 @@
 using Spectre.Console.Extensions;
 using Spectre.Console.Rendering;
 
-namespace Quacklibs.AzureDevopsCli.Presentation.Tables;
+namespace Quacklibs.AzureDevopsCli.Core.Behavior.Console.Presentation.Tables;
 
 public enum ColumnValueAlignment
 {
