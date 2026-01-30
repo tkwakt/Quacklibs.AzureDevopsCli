@@ -2,7 +2,7 @@
   "profiles": {
     "Quacklibs.AzureDevopsCli": {
       "commandName": "Project",
-      "commandLineArgs": "daily"
+      "commandLineArgs": "pr read"
     }
   }
 }

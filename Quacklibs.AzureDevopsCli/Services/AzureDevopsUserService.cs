@@ -1,4 +1,6 @@
 ﻿using Microsoft.VisualStudio.Services.Graph.Client;
+using Microsoft.VisualStudio.Services.Identity;
+using Microsoft.VisualStudio.Services.Identity.Client;
 
 namespace Quacklibs.AzureDevopsCli.Services
 {
@@ -34,7 +36,7 @@ namespace Quacklibs.AzureDevopsCli.Services
             if (users.Count() == 1)
             {
                 var user = users.First();
-               return await ToAzureDevopsUser(user);
+                return await ToAzureDevopsUser(user);
             }
             else
             {
@@ -62,23 +64,24 @@ namespace Quacklibs.AzureDevopsCli.Services
         /// <returns></returns>
         private async Task<AzureDevopsUserType> ToAzureDevopsUser(GraphUser graphUser)
         {
-            //var identityClient = _service.GetClient<IdentityHttpClient>();
+            var identityClient = _service.GetClient<IdentityHttpClient>();
 
-            var graphDescriptor = graphUser.Descriptor.Identifier;
-            var userId = Guid.TryParse(graphDescriptor, out var parsedGuid) ? parsedGuid : Guid.Empty;
+            //we only support aad users. Service accounts etc are not supported
+            if (!graphUser.Descriptor.SubjectType.Equals("aad", StringComparison.InvariantCultureIgnoreCase))
+                return new NoAzureDevopsUserFound(graphUser.DisplayName);
 
-            //var identities = await identityClient.ReadIdentitiesAsync(
-            //    new[]
-            //    {
-            //        new IdentityDescriptor(graphUser.Descriptor.SubjectType, graphUser.Descriptor.Identifier)
-            //    },
-            //    QueryMembership.None
-            //);
+            // THIS is the supported search mechanism
+            var identities = await identityClient.ReadIdentitiesAsync(
+                searchFilter: IdentitySearchFilter.MailAddress,
+                filterValue: graphUser.MailAddress!
+            );
 
-            //var userId = identities.Single().Id;
-            
-            return new AzureDevopsUserType(userId, graphUser.MailAddress, graphUser.DisplayName);
+            var id = identities.FirstOrDefault()?.Id;
 
+            if (id == null)
+                return new NoAzureDevopsUserFound(graphUser.DisplayName);
+
+            return new AzureDevopsUserType(id.Value, graphUser.MailAddress, graphUser.DisplayName);
         }
     }
 }
