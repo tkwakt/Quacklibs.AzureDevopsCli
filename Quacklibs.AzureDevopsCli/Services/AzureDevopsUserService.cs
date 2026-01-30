@@ -70,7 +70,6 @@ namespace Quacklibs.AzureDevopsCli.Services
             if (!graphUser.Descriptor.SubjectType.Equals("aad", StringComparison.InvariantCultureIgnoreCase))
                 return new NoAzureDevopsUserFound(graphUser.DisplayName);
 
-            // THIS is the supported search mechanism
             var identities = await identityClient.ReadIdentitiesAsync(
                 searchFilter: IdentitySearchFilter.MailAddress,
                 filterValue: graphUser.MailAddress!
