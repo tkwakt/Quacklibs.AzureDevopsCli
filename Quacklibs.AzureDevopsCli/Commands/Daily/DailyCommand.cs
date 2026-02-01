@@ -3,6 +3,7 @@ using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
 using Quacklibs.AzureDevopsCli.Core.Types.DailyReport;
 using Quacklibs.AzureDevopsCli.Services;
+using System.Threading;
 
 namespace Quacklibs.AzureDevopsCli.Commands.Daily
 {
@@ -50,9 +51,6 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             string? forUser = context.GetValue(_forOption);
             var sinceInput = new SinceType(context.GetValue(_sinceOption));
 
-            var projects = await _azdevopsService.GetClient<ProjectHttpClient>()
-                                                 .GetProjects(stateFilter: ProjectState.WellFormed);
-
             var targetUser = await _azdevopsUserService.GetOrSelectUserAsync(forUser);
 
             if(targetUser is NoAzureDevopsUserFound usr)
@@ -62,12 +60,15 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             }
 
             AnsiConsole.WriteLine($"\n using {targetUser.Email} \n");
+
+            var projects = await _azdevopsService.GetClient<ProjectHttpClient>()
+                                                 .GetProjects(stateFilter: ProjectState.WellFormed);
+
             var dailyReportTimeRange = sinceInput.ToDateTimeRange();
 
             var dailyReport = new DailyReport(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
             await AnsiConsole.Status().Spinner(Spinner.Known.Ascii).StartAsync($"Querying {projects.Count} projects", async ctx =>
             {
-
                 ctx.Status = "Querying workitems";
                 
                 var allWorkItems = await GetChangedWorkItems(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
@@ -185,6 +186,50 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             }
 
             return workitemChanges;
+        }
+
+        public async Task<ProjectPullRequestChanges> GetPullRequests(TeamProjectReference project, int authorId, DateTime from, DateTime till)
+        {
+            var gitClient = _azdevopsService.GetClient<GitHttpClient>();
+            var repositoriesInProject = await gitClient.GetRepositoriesAsync(project.Name);
+
+
+
+            foreach (var repositoryInProject in repositoriesInProject)
+            {
+                // Get PRs where current user is the creator
+                var createdPRs = await gitClient.GetPullRequestsAsync(repositoriesInProject.Id, new GitPullRequestSearchCriteria
+                {
+                    Status = PullRequestStatus.Active,
+                    CreatorId = identityGuid,
+                }, cancellationToken: cancellationToken);
+
+                // Get PRs where current user is a reviewer
+                var reviewerPRs = await gitClient.GetPullRequestsAsync(repositoriesInProject.Id, new GitPullRequestSearchCriteria
+                {
+                    Status = PullRequestStatus.Active,
+                    ReviewerId = identityGuid
+                }, cancellationToken: cancellationToken);
+
+                // Combine and deduplicate by PR ID
+                createdPRs.AddRange(reviewerPRs);
+                var combinedCollection = createdPRs.DistinctBy(e => e.PullRequestId);
+
+                foreach (var review in combinedCollection)
+                {
+                    allRelevantPrs.Add(review);
+                }
+
+                ctx.Status = $"{repositoriesInProject.Name} processed";
+            }
+            try
+            {
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"repo {repositoriesInProject.Name} failed: {ex.Message}");
+            }
         }
 
         public async Task<ProjectCommitChanges> GetCommits(TeamProjectReference project, string authorEmail, DateTime from, DateTime till)

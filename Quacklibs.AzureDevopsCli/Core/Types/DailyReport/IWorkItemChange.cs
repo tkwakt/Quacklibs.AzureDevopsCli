@@ -4,7 +4,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport;
 
 public class ProjectWorkItemChange(string title, string parentTitle, int parentWorkItemId, string project, int Id)
 {
-    public readonly List<WorkItemChange> Changes = [];
+    public readonly List<IWorkItemChange> Changes = [];
     public string Title { get; } = title;
 
     public int ParentWorkItemId { get; } = parentWorkItemId;
@@ -12,12 +12,12 @@ public class ProjectWorkItemChange(string title, string parentTitle, int parentW
     public string Project { get; } = project;
     public int Id { get; } = Id;
 
-    public void AddChange(WorkItemChange change)
+    public void AddChange(IWorkItemChange change)
     {
         Changes.Add(change);
     }
 
-    public void AddChanges(IEnumerable<WorkItemChange> changes) => changes.ToList().ForEach(AddChange);
+    public void AddChanges(IEnumerable<IWorkItemChange> changes) => changes.ToList().ForEach(AddChange);
     public bool Any() => Changes.Count > 0;
 }
 
@@ -39,18 +39,14 @@ public class ProjectWorkItemChanges : IEnumerable<ProjectWorkItemChange>
 }
 
 
-public abstract class WorkItemChange
+public interface IWorkItemChange
 {
-    public WorkItemChange()
-    {
-    }
-
-    public abstract string DisplayText { get; }
-    public abstract string DisplayType { get; }
+    public string DisplayText { get; }
+    public string DisplayType { get; }
 }
 
 
-public class WorkItemStateChanged : WorkItemChange
+public class WorkItemStateChanged : IWorkItemChange
 {
 
     public DateTime ChangeDate { get; set; }
@@ -68,7 +64,7 @@ public class WorkItemStateChanged : WorkItemChange
     public override string DisplayType => "State Changed";
 }
 
-public class WorkItemCreated : WorkItemChange
+public class WorkItemCreated : IWorkItemChange
 {
 
     public DateTime CreatedDate { get; set; }
@@ -85,7 +81,7 @@ public class WorkItemCreated : WorkItemChange
 }
 
 
-public class WorkItemCommentChanged : WorkItemChange
+public class WorkItemCommentChanged : IWorkItemChange
 {
     public DateTime ChangeDate { get; set; }
     public string CommentAuthor { get; }

@@ -11,12 +11,10 @@ namespace Quacklibs.AzureDevopsCli
         private Lazy<VssConnection> _connection
             => new(() => CreatePATConnection(_settingsService.Settings.OrganizationUrl, _settingsService.Settings.PAT));
 
-
         public AzureDevopsService(SettingsService settings)
         {
             _settingsService = settings;
         }
-
 
         public T GetClient<T>() where T : IVssHttpClient
         {
@@ -31,7 +29,6 @@ namespace Quacklibs.AzureDevopsCli
 
             return _connection.Value.GetClient<T>();
         }
-
 
         /// <summary>
         /// Personal Access Token authentication (legacy - use modern auth instead)

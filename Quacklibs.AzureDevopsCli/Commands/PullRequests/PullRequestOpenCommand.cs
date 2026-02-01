@@ -4,6 +4,8 @@ namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
 {
     public class PullRequestOpenCommand : BaseCommand
     {
+        public const string SampleCommand = $"Run {CommandConstants.BaseCommand} pr open (id)";
+
         private readonly AzureDevopsService _service;
 
         public Option<int> PullRequestIdOption = new("--id");

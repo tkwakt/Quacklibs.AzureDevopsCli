@@ -97,12 +97,13 @@ namespace Quacklibs.AzureDevopsCli.Commands.PullRequests
                         .WithColumn("Repo", new(e => e.Repository?.Name))
                         .WithColumn("Submitter", new(e => e.CreatedBy?.DisplayName))
                         .WithColumn("IsReviewed", new(e => e.Reviewers.Any(rv => rv.Vote >= 5) ? "true" : "false"))
-                        .WithColumn("Link", new(e => e.RemoteUrl?.ToString()?.AsUrlMarkup()))
                         .WithRows(allRelevantPrs)
                         .Build();
 
             AnsiConsole.Write(table);
 
+
+            AnsiConsole.WriteLine($"run {PullRequestOpenCommand.SampleCommand} to open PR");
             return ExitCodes.Ok;
         }
     }

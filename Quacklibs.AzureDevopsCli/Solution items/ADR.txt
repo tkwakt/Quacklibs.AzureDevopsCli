@@ -7,7 +7,7 @@ Authorization will be done by using PATs. The PAT will be stored locally.
 
 # Workitems
 ## Create work item | Task
-Use case: as a developer i want to be able to add work items | tasks through the CLI. This enables me to create 
+Use case: as a developer i want to be able to add work items | tasks through the CLI.
 Goal: create a single Task | work item with a title in the active state. 
 
 # Release notes
