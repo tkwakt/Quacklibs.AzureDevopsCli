@@ -67,7 +67,6 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             var dailyReport = new DailyReport(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
             await AnsiConsole.Status().Spinner(Spinner.Known.Ascii).StartAsync($"Querying {projects.Count} projects", async ctx =>
             {
-
                 ctx.Status = "Querying workitems";
                 
                 var allWorkItems = await GetChangedWorkItems(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);

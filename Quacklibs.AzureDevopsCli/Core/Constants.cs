@@ -17,6 +17,7 @@ namespace Quacklibs.AzureDevopsCli.Core
     public class CommandOptionConstants
     {
         public const string ForOptionName = "--for";
+        public const string ProjectOptionName = "--project";
         public const string SinceOptionName = "--since";
         public static string[] SinceOptionAliasses = ["-s"];
 

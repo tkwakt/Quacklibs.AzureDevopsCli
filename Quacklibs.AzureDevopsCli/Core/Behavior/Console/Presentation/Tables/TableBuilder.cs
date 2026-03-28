@@ -10,7 +10,7 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
     private readonly List<T> _rows = [];
     private readonly List<ColumnValue<T>> _columnValues = [];
 
-    private string _title { get; set; }
+    private string _title { get; set; } = string.Empty;
 
     private TableBuilder()
     {
@@ -66,7 +66,6 @@ public class TableBuilder<T> : ISubColumnBuilder<T>, ITableColumnBuilder<T>, ITa
 
     public Table Build()
     {
-
         _table.Title = new TableTitle(_title.EscapeMarkup(), new Style(decoration: Decoration.Bold | Decoration.Underline));
 
         foreach (var row in _rows)
