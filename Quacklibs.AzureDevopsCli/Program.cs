@@ -19,6 +19,7 @@ namespace Quacklibs.AzureDevopsCli
                 .AddSingleton<SettingsService>()
                 .AddScoped<AzureDevopsService>()
                 .AddScoped<AzureDevopsUserService>()
+                .AddScoped<AzureDevopsProjectService>()
                 .AddScoped<ICredentialStorage, CredentialStorage>()
                 .AddTransient<ConfigureCommand>()
                   .AddTransient<ConfigureReadCommand>()

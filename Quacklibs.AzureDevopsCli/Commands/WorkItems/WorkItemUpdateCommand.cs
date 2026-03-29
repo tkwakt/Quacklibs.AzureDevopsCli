@@ -10,7 +10,7 @@ internal class WorkItemUpdateCommand : BaseCommand
     private readonly AzureDevopsService _service;
     private readonly AzureDevopsUserService _userService;
 
-    private Option<string> _commentOption = new("--comment", "-c")
+    private readonly Option<string> _commentOption = new("--comment", "-c")
     {
         Required = false,
         DefaultValueFactory = _ => string.Empty,
@@ -22,12 +22,23 @@ internal class WorkItemUpdateCommand : BaseCommand
         Description = "Filter the report by person. The value can be an email address or (part of) a name.If multiple users match, an interactive selection is shown.\r\n"
     };
 
-    private Option<int> _workItemIdOption = new("--id");
+    private readonly Option<int> _workItemIdOption = new("--id");
 
-    public Option<WorkItemState?> _newState = new("--state", "-s")
+    private readonly Option<int> _parentWorkItemIdOption = new("--parentId")
+    {
+        Required = false
+    };
+
+    public readonly Option<WorkItemState?> _newState = new("--state", "-s")
     {
         Required = false,
         Description = "The new state to set the work item to."
+    };
+
+    private readonly Option<string> _descriptionOption = new("--description", "-d")
+    {
+        Required = false,
+        Description = "Update the description of the workItem"
     };
 
     public WorkItemUpdateCommand(AzureDevopsService service, AzureDevopsUserService userService) : base(CommandConstants.UpdateCommand, "Update a workitem", "u")
@@ -41,6 +52,8 @@ internal class WorkItemUpdateCommand : BaseCommand
         Options.Add(_newState);
         Options.Add(_commentOption);
         Options.Add(_forOption);
+        Options.Add(_descriptionOption);
+        Options.Add(_parentWorkItemIdOption);
     }
 
 
@@ -49,7 +62,7 @@ internal class WorkItemUpdateCommand : BaseCommand
         var witClient = _service.GetClient<WorkItemTrackingHttpClient>();
 
         // Resolve work item ID
-        var workItemId =  parseResult.GetValue(_workItemIdOption);
+        var workItemId = parseResult.GetValue(_workItemIdOption);
         if (workItemId <= 0)
         {
             AnsiConsole.MarkupLine($"A valid work item ID is required. Run {WorkItemReadCommand.CommandText} to get an overview of active workitems".WithErrorMarkup());
@@ -66,8 +79,11 @@ internal class WorkItemUpdateCommand : BaseCommand
 
         var newState = parseResult.GetValue(_newState);
         var comment = parseResult.GetValue(_commentOption);
+        var description = parseResult.GetValue(_descriptionOption);
+        var parentId = parseResult.GetValue(_parentWorkItemIdOption);
 
         var patch = new JsonPatchDocument();
+    
 
         if (newState != default)
         {
@@ -81,7 +97,14 @@ internal class WorkItemUpdateCommand : BaseCommand
         {
             patch.Add(CreatePatchOperation(Operation.Add, "/fields/System.History", comment));
         }
-
+        if (parentId != default)
+        {
+            patch.Add(CreatePatchOperation(Operation.Add, $"/fields/{AzureDevopsFields.WorkItemParent}", parentId.ToString()));
+        }
+        if (description != default)
+        {
+            patch.Add(CreatePatchOperation(Operation.Add, $"/fields/{AzureDevopsFields.Description}", description));
+        }
         if (patch.Count > 0)
         {
             var updatedWorkItem = await witClient.UpdateWorkItemAsync(patch, workItemId);

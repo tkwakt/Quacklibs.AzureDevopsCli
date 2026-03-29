@@ -10,33 +10,61 @@ namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
 {
     internal class SprintPlanningUpdateCommand : BaseCommand
     {
+        private readonly Option<string> _forOption = new(CommandOptionConstants.ForOptionName)
+        {
+            Required = false,
+            Description = "Filter the report by person. The value can be an email address or (part of) a name. \r\n" +
+                          "If multiple users match, an interactive selection is shown"
+        };
+        private readonly Option<string> _projectOption = new(CommandOptionConstants.ProjectOptionName)
+        {
+            Required = false,
+            Description = "the project to run the command on"
+        };
+
+        private readonly AzureDevopsUserService _users;
+        private readonly AzureDevopsProjectService _projectService;
+
+
         public AzureDevopsService _service { get; }
 
-        public string Project { get; set; }
 
-        public string AssignedTo { get; set; } = "@all";
-
-        public SprintPlanningUpdateCommand(AzureDevopsService service, SettingsService options) : base(CommandConstants.UpdateCommand, "Move workitems from one sprint to another")
+        public SprintPlanningUpdateCommand(AzureDevopsService service, AzureDevopsUserService users, AzureDevopsProjectService projectService, SettingsService options) : base(CommandConstants.UpdateCommand, "Move workitems from one sprint to another")
         {
             _service = service;
+            _users = users;
+            _projectService = projectService;
 
-            Project = base.Settings.DefaultProject;
+            _projectOption.DefaultValueFactory = _ => Settings.DefaultProject;
+
+            this.Add(_projectOption);
         }
 
         protected override async Task<int> OnExecuteAsync(ParseResult parseResult)
         {
-            var projects = await _service.GetClient<ProjectHttpClient>().GetProjects();
+            var forOptionResult = parseResult.GetValue(_forOption);
+            var projectOptionResult = parseResult.GetValue(_projectOption);
 
-            var selectedProject = projects.TryGetTeamProject(Project);
+            //var projects = await _service.GetClient<ProjectHttpClient>().GetProjects();
+            var targetUser = await _users.GetOrSelectUserAsync(forOptionResult);
+            var userSearchQuery = targetUser.DisplayName;
 
-            if (selectedProject == null)
+            if (targetUser is NoAzureDevopsUserFound)
             {
-                Console.WriteLine("no matching project found");
-                return ExitCodes.Ok;
+                userSearchQuery = "@all";
+            }
+            
+            var selectedProject = await _projectService.GetOrSelectProjectAsync(projectOptionResult);
+
+            if(selectedProject is NoTeamProjectFoundResult)
+            {
+                Console.WriteLine($"No project found for {projectOptionResult}");
+                return ExitCodes.Error;
             }
 
-            var client = _service.GetClient<WorkHttpClient>();
+            Console.WriteLine($"Querying for {userSearchQuery}, project {selectedProject.FullProjectName} ");
 
+            var client = _service.GetClient<WorkHttpClient>();
             var teamContext = new TeamContext(selectedProject.Id);
 
             var iterations = await client.GetTeamIterationsAsync(teamContext);
@@ -63,7 +91,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.SprintPlanning
             var fromIteration = AnsiConsole.Prompt(fromPrompt);
             var toIteration = AnsiConsole.Prompt(toPrompt);
 
-            var assignedToWiql = new AssignedUserWiqlQueryPart(base.Settings.UserEmail).Get(this.AssignedTo);
+            var assignedToWiql = new AssignedUserWiqlQueryPart(base.Settings.UserEmail).Get(userSearchQuery);
 
             var wiql = new Wiql()
             {

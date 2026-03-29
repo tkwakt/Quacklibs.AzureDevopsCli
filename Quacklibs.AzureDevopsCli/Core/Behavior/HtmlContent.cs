@@ -12,15 +12,20 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
         public static string ToSpectreConsoleMarkup(this HtmlContentType content)
         {
             if (string.IsNullOrEmpty(content.Value))
-                return string.Empty;
+                return "-";
 
-            var value = content.Value;
+            var value = content.Value.Trim();
 
             // handle lists
             value = Regex.Replace(value, @"<ul[^>]*>", string.Empty, RegexOptions.IgnoreCase);
             value = Regex.Replace(value, @"</ul>", "\n", RegexOptions.IgnoreCase);
             value = Regex.Replace(value, @"<li[^>]*>", "• ", RegexOptions.IgnoreCase);
             value = Regex.Replace(value, @"</li>", "\n", RegexOptions.IgnoreCase);
+            value = Regex.Replace(value, "<.*?>", string.Empty)
+                         .Replace("&nbsp;", " ")
+                         .Replace("&quot;", "'");
+            
+
 
             // Replace Azure DevOps mentions: <a data-vss-mention>...</a>
             value = Regex.Replace(value, @"<a[^>]*data-vss-mention[^>]*>(.*?)</a>", match => $"{Markup.Escape(match.Groups[1].Value.Trim())}", RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -37,7 +42,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
                 .Replace("<u>", "[underline]").Replace("</u>", "[/]")
                 .Replace("<div>", "").Replace("</div>", "")
                 .Pipe(s => Regex.Replace(s, @"<a\s+href\s*=\s*""([^""]+)""\s*>(.*?)</a>",
-                      match => $"[link={match.Groups[1].Value}]{match.Groups[2].Value}[/]")); ;
+                      match => $"[link={match.Groups[1].Value}]{match.Groups[2].Value}[/]"));
         }
 
         private static string Pipe(this string input, Func<string, string> func) => func(input);

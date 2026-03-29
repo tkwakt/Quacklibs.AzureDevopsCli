@@ -1,14 +1,23 @@
-﻿using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
+﻿using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
+using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
 using Quacklibs.AzureDevopsCli.Services;
+using Spectre.Console;
+using Spectre.Console.Rendering;
+using System.Linq;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;
 
 internal class WorkItemReadCommand : BaseCommand
 {
     private const int MaxAllowableNumbersOfWorkItems = 200;
-
     public const string CommandText = $"{CommandConstants.BaseCommand} workitem {CommandConstants.ReadCommand}";
+    public string CommentTextWorkItemReadSingleItem => $"{CommandConstants.BaseCommand} workitem {CommandConstants.ReadCommand} --id IdValue";
 
+    private Option<int> _workItemIdOption = new("--id")
+    {
+        Required = false
+    };
 
     private Option<string> _forOption = new(CommandOptionConstants.ForOptionName);
 
@@ -25,6 +34,7 @@ internal class WorkItemReadCommand : BaseCommand
     {
         Options.Add(_forOption);
         Options.Add(_stateOption);
+        Options.Add(_workItemIdOption);
 
         var complationItems = CompletiontionItems.FromEnum<WorkItemState>().ToArray();
         _stateOption.CompletionSources.Add(ctx => complationItems);
@@ -37,6 +47,169 @@ internal class WorkItemReadCommand : BaseCommand
 
     protected override async Task<int> OnExecuteAsync(ParseResult context)
     {
+        var workItemId = context.GetValue(_workItemIdOption);
+
+        return workItemId != default ? await ReadSingleWorkItemAsync(workItemId)
+                                     : await ReadMultipleWorkItemsAsync(context);
+    }
+
+    private async Task<int> ReadSingleWorkItemAsync(int workItemId)
+    {
+        string noValue = "-";
+
+        var client = _azureDevops.GetClient<WorkItemTrackingHttpClient>();
+        var workItem = await client.GetWorkItemAsync(id: workItemId, expand: WorkItemExpand.Relations);
+        var comments = await client.GetCommentsAsync(workItemId);
+
+        //hierarchy
+        var workItemHierarchy = await BuildWorkItemHierarchyAsync(client, workItem);
+
+        //Target workitem
+        var tableTitle = $"{workItem.Id} {workItem.Fields[AzureDevopsFields.WorkItemTitle]}";
+
+        var state = GetField(AzureDevopsFields.WorkItemState);
+        var description = new HtmlContentType(GetField(AzureDevopsFields.Description)).ToSpectreConsoleMarkup();
+        var acceptanceCriteria = new HtmlContentType(GetField(AzureDevopsFields.AcceptanceCriteria)).ToSpectreConsoleMarkup();
+        var assignedTo = noValue;
+        if (workItem.Fields.TryGetValue(AzureDevopsFields.WorkItemAssignedTo, out var result))
+        {
+            if (result is IdentityRef identity)
+            {
+                assignedTo = identity.DisplayName;
+            }
+        }
+
+        var metaTable = new Table().Border(TableBorder.Minimal);
+
+        metaTable.AddColumn($"Field");
+        metaTable.AddColumn("Value");
+
+        metaTable.AddRow("Title", tableTitle.EscapeMarkup());
+        metaTable.AddRow("Type", GetField(AzureDevopsFields.WorkItemType));
+        metaTable.AddRow("State", state.AsWorkItemStateMarkup());
+        metaTable.AddRow("Assigned To", assignedTo);
+        metaTable.AddRow("Area", GetField(AzureDevopsFields.AreaPath));
+        metaTable.AddRow("Iteration", GetField(AzureDevopsFields.IterationPath));
+        metaTable.AddRow("Tags", GetField(AzureDevopsFields.Tags));
+        metaTable.AddRow("Created", GetField(AzureDevopsFields.CreatedDate));
+        metaTable.AddRow("Updated", GetField(AzureDevopsFields.ChangedDate));
+        metaTable.AddRow("Description", description.EscapeMarkup());
+
+        var acceptancePanel = new Panel(new Markup(acceptanceCriteria))
+        {
+            Header = new PanelHeader("Acceptance Criteria"),
+            Border = BoxBorder.Rounded
+        };
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(workItemHierarchy);
+        AnsiConsole.Write(metaTable);
+
+        if (acceptanceCriteria != noValue)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(acceptancePanel);
+        }
+
+        if (comments.Count > 0)
+        {
+            var commentsTree = new Tree("comments");
+            var workItemComments = comments.Comments.Select(e => new Core.Types.Workitem.WorkItemComment(e.RevisedDate, e.Text, e.RevisedBy.DisplayName).DisplayText);
+            commentsTree.AddNodes(workItemComments);
+
+            AnsiConsole.Write(commentsTree);
+        }
+
+        AnsiConsole.WriteLine();
+
+        return ExitCodes.Ok;
+
+        string GetField(string fieldName) => workItem.Fields.ContainsKey(fieldName) ? workItem.Fields[fieldName]?.ToString() ?? noValue : noValue;
+    }
+
+
+    private async Task<IRenderable> BuildWorkItemHierarchyAsync(WorkItemTrackingHttpClient client, WorkItem targetWorkItem)
+    {
+        var parentWorkItems = await GetOrderedParentsAsync(client, targetWorkItem);
+
+        //todo: add entire child tree. not only the first level
+        var childRelationWorkItemId = targetWorkItem.Relations
+                                                    .Where(r => r.Rel == "System.LinkTypes.Hierarchy-Forward")
+                                                    .Select(e => ExtractIdFromUrl(e.Url))
+                                                    .ToList();
+
+        var childWorkItems = childRelationWorkItemId.Any() ? await client.GetWorkItemsAsync(childRelationWorkItemId) : [];
+
+        var tree = new Tree("");
+        tree.AddNode(new Markup("Workitem hierarchy"));
+        TreeNode leaf = tree.Nodes[0];
+
+        foreach (var wi in parentWorkItems)
+        {
+            leaf = leaf.AddNode(new TreeNode(new Markup(GetWorkItemNode(wi))));
+        }
+
+        var childWorkItemNodes = childWorkItems.Select(wi => GetWorkItemNode(wi, true));
+
+        leaf.AddNode(GetWorkItemNode(targetWorkItem).WithWarningMarkup())
+            .AddNodes(childWorkItemNodes);
+
+        return tree;
+
+
+        string GetWorkItemNode(WorkItem? workItem, bool format = false)
+        {
+            if (workItem == null)
+                return "N/A";
+
+            var wTitle = workItem.Fields[AzureDevopsFields.WorkItemTitle]?.ToString() ?? "-";
+            var wType = workItem.Fields[AzureDevopsFields.WorkItemType]?.ToString() ?? "-";
+            var wState = workItem.Fields[AzureDevopsFields.WorkItemState]?.ToString() ?? "-";
+
+            return format ? $"{workItem.Id,-8} {wType,-12} {wState.AsWorkItemStateMarkup(),-17} {wTitle.EscapeMarkup()}"
+                          : $"{workItem.Id} - {wType} - {wState.AsWorkItemStateMarkup()} - {wTitle.EscapeMarkup()}";
+        }
+    }
+
+    private async Task<List<WorkItem>> GetOrderedParentsAsync(WorkItemTrackingHttpClient client, WorkItem workItem)
+    {
+        var parents = new List<WorkItem>();
+        var current = workItem;
+
+        while (true)
+        {
+            var parentId = current.Relations?.FirstOrDefault(r => r.Rel == "System.LinkTypes.Hierarchy-Reverse")?.Url is string url
+                    ? ExtractIdFromUrl(url) : (int?)null;
+
+            if (parentId == null)
+                break;
+
+
+            var parent = await client.GetWorkItemAsync(id: parentId.Value, expand: WorkItemExpand.Relations);
+
+            if (parent == null)
+                break;
+
+            parents.Add(parent);
+            current = parent;
+        }
+
+        //ensure that oldest parent is first in the list
+        parents.Reverse();
+
+        return parents;
+    }
+
+    /// <summary>
+    /// The relation's URL looks like: "https://dev.azure.com/{org}/{project}/_apis/wit/workItems/{id}"
+    /// </summary>
+    /// <param name="url"></param>
+    /// <returns></returns>
+    int ExtractIdFromUrl(string url) => int.Parse(url.Split('/').Last());
+
+    private async Task<int> ReadMultipleWorkItemsAsync(ParseResult context)
+    {
+
         var states = context.GetValue(_stateOption) ?? [];
         var forUser = context.GetValue(_forOption);
 
@@ -90,13 +263,13 @@ internal class WorkItemReadCommand : BaseCommand
 
         var result = await _azureDevops.GetClient<WorkItemTrackingHttpClient>().QueryByWiqlAsync(wiql, top: MaxAllowableNumbersOfWorkItems);
 
-        var requestedFields = new[] { 
-            AzureDevopsFields.WorkItemId, 
-            AzureDevopsFields.WorkItemType, 
+        var requestedFields = new[] {
+            AzureDevopsFields.WorkItemId,
+            AzureDevopsFields.WorkItemType,
             AzureDevopsFields.WorkItemState,
-            AzureDevopsFields.WorkItemTitle, 
+            AzureDevopsFields.WorkItemTitle,
             AzureDevopsFields.TeamProject,
-            AzureDevopsFields.IterationPath 
+            AzureDevopsFields.IterationPath
         };
 
         var ids = result.WorkItems.Select(e => e.Id);
@@ -123,7 +296,8 @@ internal class WorkItemReadCommand : BaseCommand
 
         AnsiConsole.Write(table);
 
-        AnsiConsole.MarkupLine($"Use '{WorkItemOpenCommand.CommandHelpText}' to open workitem in browswer \n");
+        AnsiConsole.MarkupLine($"Use '{WorkItemOpenCommand.CommandHelpText.WithWarningMarkup()}' to open workitem in browswer \n");
+        AnsiConsole.MarkupLine($"Use '{CommentTextWorkItemReadSingleItem.WithWarningMarkup()}' to open workitem details \n");
 
         return ExitCodes.Ok;
     }
