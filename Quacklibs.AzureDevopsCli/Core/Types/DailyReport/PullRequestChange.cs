@@ -9,15 +9,6 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
         public string GetDescription { get; }
     }
 
-    public record PullRequestCreated(DateTime CreatedOn, string branch) : IPullRequestChange
-    {
-        public string GetDateDescription => throw new NotImplementedException();
-
-        public string GetStatus => "Created";
-
-        public string GetDescription => throw new NotImplementedException();
-    }
-
     public record PullRequestReviewed(DateTime ReviewedOn, string ReviewedBy, string branch) : IPullRequestChange
     {
         public string GetDateDescription => ReviewedOn.ToShortDateString();
@@ -25,7 +16,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
         public string GetStatus => "Reviewed";
 
         public string GetDescription => $"Reviewed by {ReviewedBy}";
-            }
+    }
 
     public record PullRequestClosed(int pullRequestId, DateTime ReviewedOn, string Reviewers, string Description, string state) : IPullRequestChange
     {
