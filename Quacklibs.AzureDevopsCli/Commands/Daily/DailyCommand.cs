@@ -189,12 +189,12 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             return workitemChanges;
         }
 
-        public async Task<ProjectPullRequests> GetPullRequests(TeamProjectReference project, AzureDevopsUserType user, DateTime from, DateTime till)
+        public async Task<ProjectPullRequestChanges> GetPullRequests(TeamProjectReference project, AzureDevopsUserType user, DateTime from, DateTime till)
         {
             var gitClient = _azdevopsService.GetClient<GitHttpClient>();
             var repositoriesInProject = await gitClient.GetRepositoriesAsync(project.Name);
 
-            var pullRequestProject = new ProjectPullRequests(project.Name);
+            var pullRequestProject = new ProjectPullRequestChanges(project.Name);
 
             foreach (var repositoryInProject in repositoriesInProject)
             {
@@ -210,12 +210,22 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
                 foreach (var item in prs)
                 {
+                    var reviewers = string.Join(",",
+    item.Reviewers.Where(r => r.Vote != 0 && r.Vote != -10).Select(r => $"{r.DisplayName} ({r.Vote switch
+    {
+        10 => "Approved",
+        5 => "Approved with suggestions",
+        0 => "No vote",
+        -5 => "Waiting for author",
+        -10 => "Rejected",
+        _ => "Unknown"
+    }})"));
                     if (item.Status == PullRequestStatus.Active)
                         pullRequestProject.Add(new PullRequestActive(item.PullRequestId, item.CreationDate, item.Description));
                     if (item.Status == PullRequestStatus.Completed)
-                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, item.Description, PullRequestStatus.Completed.ToString()));
+                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, reviewers, item.Description, PullRequestStatus.Completed.ToString()));
                     if (item.Status == PullRequestStatus.Abandoned)
-                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, item.Description, PullRequestStatus.Abandoned.ToString()));
+                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, reviewers, item.Description, PullRequestStatus.Abandoned.ToString()));
                 }
             }
 

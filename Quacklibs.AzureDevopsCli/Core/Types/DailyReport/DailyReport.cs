@@ -79,7 +79,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
                                 .Create()
                                 .WithTitle("Pull requests")
                                 .WithColumn("Date", new(e => e.GetDateDescription.EscapeMarkup()))
-                                .WithColumn("State", new(e => e.Status.EscapeMarkup()))
+                                .WithColumn("State", new(e => e.GetStatus.EscapeMarkup()))
                                 .WithColumn("Description", new(e => e.GetDescription.EscapeMarkup()))
                                 .WithRows(dailyProjectEntry.Prs)
                                 .Build();
@@ -99,9 +99,9 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
         public string Project { get; set; }
         public ProjectWorkItemChanges WorkItemChanges { get; } = [];
         public ProjectCommitChanges CommitChanges { get; private set; } = [];
-        public ProjectPullRequests Prs { get; }
+        public ProjectPullRequestChanges Prs { get; }
 
-        public DailyProjectEntry(string projectName, IEnumerable<ProjectWorkItemChange> projectWorkItems, ProjectCommitChanges projectCommitChanges, ProjectPullRequests prs)
+        public DailyProjectEntry(string projectName, IEnumerable<ProjectWorkItemChange> projectWorkItems, ProjectCommitChanges projectCommitChanges, ProjectPullRequestChanges prs)
         {
             Project = projectName;
             AddRange(projectWorkItems);
