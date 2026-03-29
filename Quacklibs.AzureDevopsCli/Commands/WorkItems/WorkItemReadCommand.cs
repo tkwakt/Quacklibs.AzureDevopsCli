@@ -1,10 +1,8 @@
-﻿using Microsoft.VisualStudio.Services.Common;
+﻿
 using Microsoft.VisualStudio.Services.WebApi;
 using Quacklibs.AzureDevopsCli.Core.Behavior.Console.Commandline;
 using Quacklibs.AzureDevopsCli.Services;
-using Spectre.Console;
 using Spectre.Console.Rendering;
-using System.Linq;
 
 namespace Quacklibs.AzureDevopsCli.Commands.WorkItems;
 
@@ -27,6 +25,10 @@ internal class WorkItemReadCommand : BaseCommand
         DefaultValueFactory = (_) => [WorkItemState.New, WorkItemState.Active]
     };
 
+    private Option<string> _searchOption = new("--search")
+    {
+    };
+
     private readonly AzureDevopsService _azureDevops;
     private readonly AzureDevopsUserService _azureDevopsUserService;
 
@@ -35,6 +37,7 @@ internal class WorkItemReadCommand : BaseCommand
         Options.Add(_forOption);
         Options.Add(_stateOption);
         Options.Add(_workItemIdOption);
+        Options.Add(_searchOption);
 
         var complationItems = CompletiontionItems.FromEnum<WorkItemState>().ToArray();
         _stateOption.CompletionSources.Add(ctx => complationItems);
@@ -48,9 +51,72 @@ internal class WorkItemReadCommand : BaseCommand
     protected override async Task<int> OnExecuteAsync(ParseResult context)
     {
         var workItemId = context.GetValue(_workItemIdOption);
+        var searchQuery = context.GetValue(_searchOption);
 
+        if (!string.IsNullOrEmpty(searchQuery)) { 
+            return await SearchWorkItemsAsync(searchQuery);
+        }
         return workItemId != default ? await ReadSingleWorkItemAsync(workItemId)
                                      : await ReadMultipleWorkItemsAsync(context);
+    }
+
+    private async Task<int> SearchWorkItemsAsync(string searchQuery)
+    {
+        var rawQuery = $"""
+                                SELECT [System.Id], [System.WorkItemType], [System.Title], [System.State]
+                                FROM WorkItems
+                                WHERE [System.Title] CONTAINS '{searchQuery}'
+                                OR [System.Description] CONTAINS '{searchQuery}'
+                                AND [System.State] IN ('New', 'Active') 
+                                ORDER BY [System.ChangedDate] DESC
+                        """;
+
+        var cleanedQuery = string.Join(
+           Environment.NewLine,
+            rawQuery
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrWhiteSpace(line)));
+
+        var wiql = new Wiql() { Query = cleanedQuery };
+
+        Console.WriteLine($"Querying workitems");
+
+        var result = await _azureDevops.GetClient<WorkItemTrackingHttpClient>().QueryByWiqlAsync(wiql, top: MaxAllowableNumbersOfWorkItems);
+
+        var requestedFields = new[] {
+            AzureDevopsFields.WorkItemId,
+            AzureDevopsFields.WorkItemType,
+            AzureDevopsFields.WorkItemState,
+            AzureDevopsFields.WorkItemTitle,
+            AzureDevopsFields.TeamProject,
+            AzureDevopsFields.IterationPath
+        };
+
+        var ids = result.WorkItems.Select(e => e.Id);
+
+        if (!ids.Any())
+        {
+            AnsiConsole.MarkupLine("No workitems found".WithSuccessMarkup());
+            return ExitCodes.Ok;
+        }
+
+        var workItems = await _azureDevops.GetClient<WorkItemTrackingHttpClient>()
+                                          .GetWorkItemsAsync(ids, fields: requestedFields);
+
+        var table = TableBuilder<WorkItem>
+                    .Create()
+                    .WithTitle("WorkItems")
+                    .WithColumn("id", new(e => e.Id.ToString()))
+                    .WithColumn("title", new(e => e.Fields[AzureDevopsFields.WorkItemTitle].ToString()))
+                    .WithColumn("work item type", new(e => e.Fields[AzureDevopsFields.WorkItemType].ToString()))
+                    .WithColumn("state", new(e => e.Fields[AzureDevopsFields.WorkItemState].ToString()))
+                    .WithColumn("iteration", new(e => e.Fields[AzureDevopsFields.IterationPath].ToString()))
+                    .WithRows(workItems)
+                    .Build();
+
+        AnsiConsole.Write(table);
+        return ExitCodes.Ok;
     }
 
     private async Task<int> ReadSingleWorkItemAsync(int workItemId)
