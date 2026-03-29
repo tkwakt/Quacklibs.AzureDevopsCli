@@ -19,8 +19,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Behavior
 
             if (key == AzureDevopsFields.WorkItemAssignedTo)
             {
-                var assignedToValue = result as IdentityRef;
-                return assignedToValue == null ? defaultValue : assignedToValue.DisplayName;
+                return result is not IdentityRef assignedToValue ? defaultValue : assignedToValue.DisplayName;
             }
 
             return result == null ? defaultValue : result.ToString();

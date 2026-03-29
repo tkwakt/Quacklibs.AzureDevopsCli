@@ -34,7 +34,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
 
             foreach (var dailyProjectEntry in projectsWithChanges)
             {
-                AnsiConsole.WriteLine($"{dailyProjectEntry.Project}", new Style(decoration: Decoration.Bold));
+                AnsiConsole.MarkupLine($"{dailyProjectEntry.Project}");
 
                 var groupedWorkItemChanges = dailyProjectEntry.WorkItemChanges.Where(e => e.Changes.Any())
                                                                               .GroupBy(e => new { e.ParentWorkItemId, e.ParentTitle });
@@ -45,7 +45,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
 
                     foreach (var workItemChange in parentWorkItem)
                     {
-                        var workItemNode = root.AddNode($"{workItemChange.Id} {workItemChange.Title.EscapeMarkup().Highlight()}");
+                        var workItemNode = root.AddNode($"{workItemChange.Id} {workItemChange.Title.EscapeMarkup().WithWarningMarkup()}");
 
                         foreach (var item in workItemChange.Changes)
                         {
@@ -57,18 +57,34 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
                     AnsiConsole.Write(root);
                 }
 
-                AnsiConsole.WriteLine();
-
-                var cmmitTree = new Tree($"Commit");
+                //commits
+                var commitTree = new Tree($"Commit");
                 foreach (var commitChange in dailyProjectEntry.CommitChanges)
                 {
-                    cmmitTree.AddNode($"{commitChange.CreatedAt} Commit {commitChange.Author} {commitChange.Comment}");
+                    commitTree.AddNode($"{commitChange.CreatedAt} Commit {commitChange.Author} {commitChange.Comment}".EscapeMarkup());
                 }
 
-                if (cmmitTree.Nodes.Any())
+                if (commitTree.Nodes.Any())
                 {
                     Console.WriteLine();
-                    AnsiConsole.Write(cmmitTree);
+                    AnsiConsole.Write(commitTree);
+                }
+
+
+                if (dailyProjectEntry.Prs.Any())
+                {
+                    Console.WriteLine();
+                    //pr's
+                    var prTable = TableBuilder<IPullRequestChange>
+                                .Create()
+                                .WithTitle("Pull requests")
+                                .WithColumn("Date", new(e => e.GetDateDescription.EscapeMarkup()))
+                                .WithColumn("State", new(e => e.Status.EscapeMarkup()))
+                                .WithColumn("Description", new(e => e.GetDescription.EscapeMarkup()))
+                                .WithRows(dailyProjectEntry.Prs)
+                                .Build();
+
+                    AnsiConsole.Write(prTable);
                 }
             }
         }
@@ -83,12 +99,14 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
         public string Project { get; set; }
         public ProjectWorkItemChanges WorkItemChanges { get; } = [];
         public ProjectCommitChanges CommitChanges { get; private set; } = [];
+        public ProjectPullRequests Prs { get; }
 
-        public DailyProjectEntry(string projectName, IEnumerable<ProjectWorkItemChange> projectWorkItems, ProjectCommitChanges projectCommitChanges)
+        public DailyProjectEntry(string projectName, IEnumerable<ProjectWorkItemChange> projectWorkItems, ProjectCommitChanges projectCommitChanges, ProjectPullRequests prs)
         {
             Project = projectName;
             AddRange(projectWorkItems);
             CommitChanges = projectCommitChanges;
+            Prs = prs;
         }
 
         public void AddRange(IEnumerable<ProjectWorkItemChange> changes) => changes.ToList().ForEach(Add);
@@ -98,7 +116,7 @@ namespace Quacklibs.AzureDevopsCli.Core.Types.DailyReport
             WorkItemChanges.Add(change);
         }
 
-        public bool hasChanges() => WorkItemChanges.Any() || CommitChanges.Any();
+        public bool hasChanges() => WorkItemChanges.Any() || CommitChanges.Any() || Prs.Any();
     }
 
 

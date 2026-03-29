@@ -3,7 +3,6 @@ using Quacklibs.AzureDevopsCli.Commands.Configure;
 using Quacklibs.AzureDevopsCli.Commands.Daily;
 using Quacklibs.AzureDevopsCli.Commands.Project;
 using Quacklibs.AzureDevopsCli.Commands.PullRequests;
-using Quacklibs.AzureDevopsCli.Commands.Release;
 using Quacklibs.AzureDevopsCli.Commands.SprintPlanning;
 using Quacklibs.AzureDevopsCli.Commands.WorkItems;
 using Quacklibs.AzureDevopsCli.Services;
@@ -38,8 +37,6 @@ namespace Quacklibs.AzureDevopsCli
                 .AddTransient<SprintPlanningCommand>()
                  .AddTransient<SprintPlanningUpdateCommand>()
                 .AddTransient<DailyCommand>()
-                .AddTransient<ReleaseCommand>()
-                 .AddTransient<ReleaseReadCommand>()
                 .BuildServiceProvider();
 
             ServiceLocator = services;
@@ -54,7 +51,6 @@ namespace Quacklibs.AzureDevopsCli
             var dailyCommand = ServiceLocator.GetService<DailyCommand>()!;
             var projectCommand = ServiceLocator.GetService<ProjectCommand>()!;
             var sprintPlanningCommand = ServiceLocator.GetService<SprintPlanningCommand>()!;
-            var releaseCommand = ServiceLocator.GetService<ReleaseCommand>()!;
 
             root.Subcommands.Add(configureCommand);
             root.Subcommands.Add(workItemCommand);
@@ -62,7 +58,6 @@ namespace Quacklibs.AzureDevopsCli
             root.Subcommands.Add(dailyCommand);
             root.Subcommands.Add(projectCommand);
             root.Subcommands.Add(sprintPlanningCommand);
-            root.Subcommands.Add(releaseCommand);
 
             ParseResult parseResult = root.Parse(args);
 

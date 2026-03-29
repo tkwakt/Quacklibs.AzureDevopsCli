@@ -27,7 +27,7 @@ public abstract class BaseCommand : System.CommandLine.Command
 
     protected virtual Task<int> OnExecuteAsync(ParseResult parseResult)
     {
-        Console.WriteLine("no parameter provided. append --help to the command see the available options");
+        Console.WriteLine("no parameter provided. append --help to the command to see the available options");
         return Task.FromResult(ExitCodes.Ok);
     }
 }

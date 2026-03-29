@@ -18,7 +18,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
                           "If multiple users match, an interactive selection is shown.\r\n" +
                           "The person is interpreted as the primary actor per type:\r\n" +
                           "  - Commits / pull requests: author \r\n" +
-                          "  - Work items: changed by \r\n " 
+                          "  - Work items: changed by \r\n "
 
         };
 
@@ -55,7 +55,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
             var targetUser = await _azdevopsUserService.GetOrSelectUserAsync(forUser);
 
-            if(targetUser is NoAzureDevopsUserFound usr)
+            if (targetUser is NoAzureDevopsUserFound usr)
             {
                 AnsiConsole.MarkupLine("No user found or selected".WithWarningMarkup());
                 return ExitCodes.ResourceNoFound;
@@ -68,20 +68,23 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
             await AnsiConsole.Status().Spinner(Spinner.Known.Ascii).StartAsync($"Querying {projects.Count} projects", async ctx =>
             {
                 ctx.Status = "Querying workitems";
-                
+
                 var allWorkItems = await GetChangedWorkItems(dailyReportTimeRange.from, dailyReportTimeRange.till, targetUser.Email);
-                var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
+                var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = 7 };
 
                 ctx.Status = $"Querying commits using {parallelOptions.MaxDegreeOfParallelism} threads";
 
                 await Parallel.ForEachAsync(projects, parallelOptions, async (project, _) =>
                  {
                      var commits = await GetCommits(project, targetUser.Email, dailyReportTimeRange.from, dailyReportTimeRange.till);
+                     var prs = await GetPullRequests(project, targetUser, dailyReportTimeRange.from, dailyReportTimeRange.till);
+
                      var projectWorkItems = allWorkItems.Where(e => e.Project == project.Name);
+                     var projectPrs = allWorkItems.Where(e => e.Project == project.Name);
 
                      ctx.Status = $"{project.Name} finished";
 
-                     var dailyReportEntry = new DailyProjectEntry(project.Name, projectWorkItems, commits);
+                     var dailyReportEntry = new DailyProjectEntry(project.Name, projectWorkItems, commits, prs);
 
                      dailyReport.AddEntry(dailyReportEntry);
                  });
@@ -104,7 +107,7 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
                                AND [System.ChangedDate] >= '{fromUtc}'
                                AND [System.ChangedDate] <= '{tillUtc}'
                                """;
-            
+
             var client = _azdevopsService.GetClient<WorkItemTrackingHttpClient>();
 
             var wiql = new Wiql() { Query = wiqlQuery };
@@ -185,6 +188,40 @@ namespace Quacklibs.AzureDevopsCli.Commands.Daily
 
             return workitemChanges;
         }
+
+        public async Task<ProjectPullRequests> GetPullRequests(TeamProjectReference project, AzureDevopsUserType user, DateTime from, DateTime till)
+        {
+            var gitClient = _azdevopsService.GetClient<GitHttpClient>();
+            var repositoriesInProject = await gitClient.GetRepositoriesAsync(project.Name);
+
+            var pullRequestProject = new ProjectPullRequests(project.Name);
+
+            foreach (var repositoryInProject in repositoriesInProject)
+            {
+                // Get PRs where current user is the creator
+                var prs = await gitClient.GetPullRequestsAsync(repositoryInProject.Id, new GitPullRequestSearchCriteria
+                {
+                    Status = PullRequestStatus.All,
+                    CreatorId = user.Id,
+                    MinTime = from,
+                    MaxTime = till,
+                    QueryTimeRangeType = PullRequestTimeRangeType.Created,
+                });
+
+                foreach (var item in prs)
+                {
+                    if (item.Status == PullRequestStatus.Active)
+                        pullRequestProject.Add(new PullRequestActive(item.PullRequestId, item.CreationDate, item.Description));
+                    if (item.Status == PullRequestStatus.Completed)
+                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, item.Description, PullRequestStatus.Completed.ToString()));
+                    if (item.Status == PullRequestStatus.Abandoned)
+                        pullRequestProject.Add(new PullRequestClosed(item.PullRequestId, item.ClosedDate, item.Description, PullRequestStatus.Abandoned.ToString()));
+                }
+            }
+
+            return pullRequestProject;
+        }
+
 
         public async Task<ProjectCommitChanges> GetCommits(TeamProjectReference project, string authorEmail, DateTime from, DateTime till)
         {
