@@ -57,7 +57,16 @@ public static class SinceParser
         if (fixedSince != null)
             return fixedSince;
 
-        // relatieve periodes: 3d
+        // Relative periods: 6m
+        if (since.Value.EndsWith("m", StringComparison.InvariantCultureIgnoreCase) &&
+            int.TryParse(since.Value[..^1], out var months))
+        {
+            return new DateTimeRangeType(
+                from: now.AddMonths(-months),
+                till: now);
+        }
+
+        // Relative periods: 3d
         if (since.Value.EndsWith("d", StringComparison.InvariantCultureIgnoreCase) && int.TryParse(since.Value[..^1], out var days))
         {
             return new DateTimeRangeType(from: now.Date.AddDays(-days), till: now);
